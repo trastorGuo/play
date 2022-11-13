@@ -1,16 +1,42 @@
 {
-  "name": "",
+  "name": "trastor-play",
   "version": "",
   "private": true,
   "scripts": {
-    "serve": "vue-cli-service serve",
+    "dev": "vue-cli-service serve",
+    "start": "npm run dev & npm run server",
     "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
+    "lint": "vue-cli-service lint",
+    "server": "npm run clear:server && nodemon --config nodemon.json",
+    "create": "node ./cli/index.js",
+    "clear:server": "rm -rf server{/**/*,/**}.{js,d.ts,js.map,tsbuildinfo}"
   },
   "dependencies": {
+    "@multiavatar/multiavatar": "^1.0.7",
+    "@nestjs/common": "^9.0.11",
+    "@nestjs/core": "^9.0.11",
+    "@nestjs/platform-express": "^9.0.11",
+    "@nestjs/typeorm": "^9.0.1",
+    "@typescript-eslint/eslint-plugin": "^5.34.0",
     "@vue/cli": "^5.0.8",
+    "axios": "^0.27.2",
+    "commander": "^9.4.0",
     "core-js": "^3.8.3",
-    "vue": "^3.2.37"
+    "eslint-plugin-prettier": "^4.2.1",
+    "eslint-plugin-promise": "^6.0.0",
+    "fs": "^0.0.1-security",
+    "mysql2": "^2.3.3",
+    "nodemon": "^2.0.19",
+    "path": "^0.12.7",
+    "reflect-metadata": "^0.1.13",
+    "rxjs": "^7.5.6",
+    "ts-node": "^10.9.1",
+    "typeorm": "^0.3.7",
+    "typescript": "^4.7.4",
+    "vant": "^3.6.1",
+    "vue": "^3.2.37",
+    "vue-qr": "^4.0.9",
+    "vue-router": "^4.1.4"
   },
   "devDependencies": {
     "@babel/core": "^7.12.16",
@@ -19,7 +45,14 @@
     "@vue/cli-plugin-eslint": "~5.0.0",
     "@vue/cli-service": "~5.0.0",
     "eslint": "^7.32.0",
-    "eslint-plugin-vue": "^8.0.3"
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-vue": "^8.0.3",
+    "less": "^4.1.3",
+    "less-loader": "^11.0.0",
+    "ts-loader": "^9.3.1",
+    "unplugin-vue-components": "^0.22.4",
+    "vue-loader": "^17.0.0",
+    "vue-template-compiler": "^2.7.10"
   },
   "eslintConfig": {
     "root": true,
