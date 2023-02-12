@@ -8,12 +8,10 @@
     <div class="router-wrap">
         <router-view></router-view>
     </div>
-    <loading></loading>
 </template>
 
-<script lang='ts' setup>
-import Loading from '@/common/components/Loading.vue';
-</script>
+<!-- <script lang='ts' setup>
+</script> -->
 
 <style lang='less'>
 @import './assets/css/app.css';

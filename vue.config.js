@@ -18,6 +18,15 @@ module.exports = defineConfig({
     chainWebpack: (config) => {
         config.resolve.alias.set('@', resolve('src'));
     },
+    devServer: {
+        proxy: {
+            ['*']: {
+                target: 'http://localhost:6015',
+                changeOrigin: true
+            }
+        },
+        allowedHosts: ['localhost']
+    },
     pages: {
         index: {
             entry: "src/main.ts"

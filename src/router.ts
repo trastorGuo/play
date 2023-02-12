@@ -7,23 +7,42 @@
 
 import { createWebHistory, createRouter } from 'vue-router';
 import Account from './pages/Account.vue';
+import OpenRoom from './components/account/OpenRoom.vue';
+
+
+
+import Main from './pages/Main.vue';
 import Tool from './pages/Tool.vue';
 
-export default createRouter({
+const router = createRouter({
     history: createWebHistory(),
     routes: [{
         path: "/",
-        name: "Account",
-        component: Account
+        name: "main",
+        meta: { title: 'trastor' },
+        component: Main
     },
     {
         path: "/account",
-        name: "Account",
+        name: "account",
+        meta: { title: '整起来' },
+        children: [{
+            path: 'openroom',
+            component: OpenRoom
+        }],
         component: Account
     },
     {
         path: "/tool",
-        name: "Tool",
+        name: "tool",
+        meta: { title: 'tool' },
         component: Tool
     }]
 });
+
+router.beforeEach((to) => {
+    document.title = to.meta.title as string;
+    window.scrollTo(0, 0);
+});
+
+export default router;

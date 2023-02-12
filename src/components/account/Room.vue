@@ -98,13 +98,13 @@ function clickPerson(person: string) {
    }
 }
 
-setInterval(() => {
-   items.value.push(items.value.length + "郭钊支出3元给过于");
-   !touching.value && turnoverRef.value && turnoverRef.value.scrollTo({
-      top: turnoverRef.value.scrollHeight,
-      behavior: "smooth"
-   });
-}, 200);
+// setInterval(() => {
+//    items.value.push(items.value.length + "郭钊支出3元给过于");
+//    !touching.value && turnoverRef.value && turnoverRef.value.scrollTo({
+//       top: turnoverRef.value.scrollHeight,
+//       behavior: "smooth"
+//    });
+// }, 200);
 
 </script>
 

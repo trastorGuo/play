@@ -12,6 +12,7 @@
             <div class="button botton-primary" @click="download()">下载</div>
         </div>
     </div>
+    <loading :show="showLoading"></loading>
 </template>
 
 <script lang='ts' setup>
@@ -19,7 +20,9 @@ import { ref } from 'vue';
 import { Toast } from 'vant';
 import type { UploaderFileListItem } from 'vant';
 import { base64ToImgDom, imgToNewCanvas, downloadBase64 } from '@/common/utils';
-import { showLoading } from '@/common/components/hooks';
+import Loading from '@/common/components/Loading.vue';
+
+const showLoading = ref(false);
 
 const fileList = ref<UploaderFileListItem[]>([]);
 const base64 = ref('');

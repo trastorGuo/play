@@ -1,6 +1,6 @@
 <template>
     <div>
-        <van-overlay :show="showLoading">
+        <van-overlay :show="props.show">
             <div class="loader">
                 <div class="loader__bar"></div>
                 <div class="loader__bar"></div>
@@ -14,8 +14,7 @@
 </template>
 
 <script lang='ts' setup>
-import { showLoading } from './hooks';
-
+const props = defineProps<{ show: boolean }>();
 </script>
 
 <style lang='less' scoped>

@@ -1,16 +1,52 @@
-/*
- * @Description: 
- * @Date: 2022-09-04 22:33:14
- * @Author: 
- * @LastEditTime: 2022-09-04 22:37:30
- */
-import axios from "axios";
+import axios, { AxiosRequestConfig, AxiosResponse, AxiosRequestHeaders } from 'axios';
 
-
-export function get(url: string) {
-    return axios.get(url);
+interface AxiosConfig extends AxiosRequestConfig {
+    headers?: AxiosRequestHeaders;
 }
 
-export function post(url: string, params: object) {
-    return axios.post(url, { params });
+export interface Response {
+    result: number
+    error_msg?: string
+    captchaSession?: string
+    type?: string
+    url?: string
 }
+
+// TODO 考虑正式环境地址
+const BASE_URL = "http://localhost:6015";
+
+const instance = axios.create({
+    timeout: 10 * 1000,
+    baseURL: BASE_URL,
+    withCredentials: false,
+    headers: {
+        'Content-Type': 'application/json;charset=UTF-8'
+    }
+});
+
+const errorHandler = (error: Response) => {
+    throw error;
+};
+
+const responseHandler = (response: AxiosResponse<Response>) => {
+    return new Promise((resolve, reject) => {
+        const body = response.data;
+        if(body!.result !== 1) {
+            reject(body);
+        } else {
+            resolve(body);
+        }
+    }).then(null, errorHandler);
+};
+
+instance.interceptors.response.use(responseHandler);
+
+export { instance };
+
+export const get = <T>(url: string, params?: object | string, config?: AxiosConfig) => {
+    return instance.get<T, Promise<T>>(url, { params, ...config });
+};
+
+export const post = <T>(url: string, params?: any, config?: AxiosConfig) => {
+    return instance.post<T, Promise<T>>(url, { params }, config);
+};

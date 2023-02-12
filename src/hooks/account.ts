@@ -12,7 +12,6 @@ export function getMyInfo() {
     const myName = localStorage.getItem("trastor-name");
     if(myName) {
         myInfo.value.name = myName;
-        // TODO 需要把当前用户绑定房间
         Notify({ type: 'success', message: myInfo.value.name + '，欢迎您回来' });
     } else {
         showFillInName.value = true;
