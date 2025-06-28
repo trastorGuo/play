@@ -135,25 +135,25 @@
         "no-console": "off",
         "consistent-return": "off",
         "space-before-blocks": 2,
-        "keyword-spacing": [
-            "error",
-            {
-                "before": false,
-                "after": false,
-                "overrides": {
-                    "catch": { "before": true },
-                    "try": { "after": true },
-                    "import": { "after": true },
-                    "from": { "before": true, "after": true },
-                    "const": { "after": true },
-                    "return": { "before": true, "after": true },
-                    "else": { "before": true, "after": true },
-                    "continue": { "before": true, "after": true },
-                    "export": { "after": true },
-                    "as": { "before": true, "after": true }
-                }
-            }
-        ],
+        // "keyword-spacing": [
+        //     "error",
+        //     {
+        //         "before": false,
+        //         "after": false,
+        //         "overrides": {
+        //             "catch": { "before": true },
+        //             "try": { "after": true },
+        //             "import": { "after": true },
+        //             "from": { "before": true, "after": true },
+        //             "const": { "after": true },
+        //             "return": { "before": true, "after": true },
+        //             "else": { "before": true, "after": true },
+        //             "continue": { "before": true, "after": true },
+        //             "export": { "after": true },
+        //             "as": { "before": true, "after": true }
+        //         }
+        //     }
+        // ],
         "@typescript-eslint/type-annotation-spacing": [
             "error",
             {

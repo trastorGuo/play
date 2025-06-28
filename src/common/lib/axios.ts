@@ -13,7 +13,8 @@ export interface Response {
 }
 
 // TODO 考虑正式环境地址
-const BASE_URL = "http://localhost:6015";
+// 开发环境使用代理，不需要指定完整的URL
+const BASE_URL = process.env.NODE_ENV === 'production' ? "http://localhost:6015" : "";
 
 const instance = axios.create({
     timeout: 10 * 1000,
@@ -47,6 +48,6 @@ export const get = <T>(url: string, params?: object | string, config?: AxiosConf
     return instance.get<T, Promise<T>>(url, { params, ...config });
 };
 
-export const post = <T>(url: string, params?: any, config?: AxiosConfig) => {
-    return instance.post<T, Promise<T>>(url, { params }, config);
+export const post = <T>(url: string, data?: any, config?: AxiosConfig) => {
+    return instance.post<T, Promise<T>>(url, data, config);
 };

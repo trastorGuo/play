@@ -5,6 +5,9 @@ import router from "@/router";
 // 引入 pinia
 import { createPinia } from "pinia";
 import piniaPluginPersistedstate from "pinia-plugin-persistedstate";
+// 引入 ElementPlus
+import ElementPlus from 'element-plus';
+import 'element-plus/dist/index.css';
 // swiper
 import "swiper/css";
 
@@ -14,6 +17,7 @@ pinia.use(piniaPluginPersistedstate);
 
 app.use(pinia);
 app.use(router);
+app.use(ElementPlus);
 app.mount("#app");
 
 // PWA

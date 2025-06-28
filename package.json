@@ -10,7 +10,8 @@
     "lint": "vue-cli-service lint",
     "server": "npm run clear:server && nodemon --config nodemon.json",
     "create": "node ./cli/index.js",
-    "clear:server": "rm -rf server{/**/*,/**}.{js,d.ts,js.map,tsbuildinfo}"
+    "clear:server": "rm -rf server{/**/*,/**}.{js,d.ts,js.map,tsbuildinfo}",
+    "deploy": "npm run build && scp -r /Users/trastor/code/play/dist root@81.68.255.143:/root"
   },
   "dependencies": {
     "@multiavatar/multiavatar": "^1.0.7",

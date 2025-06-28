@@ -9,6 +9,28 @@ GitHub：https://github.com/imsyy/home
 
 /*全局样式*/
 
+/* 隐藏所有滚动条 */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+
+*::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge */
+  width: 0 !important;
+  height: 0 !important;
+}
+
+html, body {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none !important;
+}
+
 html,
 body {
   width: 100%;
@@ -98,12 +120,25 @@ a:hover {
   backdrop-filter: blur(10px);
   border-radius: 25px !important;
   border-color: transparent !important;
+  
+  /* 防止滚动条出现 */
+  max-width: min(90vw, 400px) !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  position: fixed !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
 
   .el-message__badge {
     display: none;
   }
   .el-message__content {
-    white-space: nowrap;
+    word-wrap: break-word !important;
+    word-break: break-word !important;
+    white-space: normal !important;
+    overflow: hidden !important;
+    line-height: 1.4 !important;
+    max-width: 100% !important;
   }
 }
 

@@ -40,13 +40,19 @@ const props = defineProps({
   backPath: {
     type: String,
     default: '/'
+  },
+  forceBackPath: {
+    type: Boolean,
+    default: false
   }
 });
 
 const router = useRouter();
 
 const goBack = () => {
-  if(window.history.length > 1) {
+  if(props.forceBackPath) {
+    router.push(props.backPath);
+  } else if(window.history.length > 1) {
     router.go(-1);
   } else {
     router.push(props.backPath);

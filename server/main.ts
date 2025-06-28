@@ -9,7 +9,7 @@ import { TransformInterceptor } from './utils/interceptor';
 import { ExceptionsFilter } from './utils/exception.filter';
 import { AppModule } from './module/app';
 
-const port = process.env.port || process.env.PORT;
+const port = process.env.port || process.env.PORT || 6015;
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);

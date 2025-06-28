@@ -22,6 +22,25 @@ const routes = [
       icon: 'LaptopCode',
       showInNav: true
     }
+  },
+  {
+    path: '/card-game',
+    name: 'CardGame',
+    component: () => import('@/pages/CardGame.vue'),
+    meta: {
+      title: '打牌记账',
+      icon: 'Star',
+      showInNav: true
+    }
+  },
+  {
+    path: '/room/:roomId?',
+    name: 'Room',
+    component: () => import('@/pages/Room.vue'),
+    meta: {
+      title: '房间',
+      showInNav: false
+    }
   }
 ];
 

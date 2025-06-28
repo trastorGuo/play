@@ -31,6 +31,7 @@ declare module '@vue/runtime-core' {
     Message: typeof import('./src/components/Message.vue')['default']
     MoreContent: typeof import('./src/components/MoreContent.vue')['default']
     Music: typeof import('./src/components/Music.vue')['default']
+    NicknameDialog: typeof import('./src/components/NicknameDialog.vue')['default']
     PageNavigation: typeof import('./src/components/PageNavigation.vue')['default']
     Player: typeof import('./src/components/Player.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
@@ -38,5 +39,7 @@ declare module '@vue/runtime-core' {
     Set: typeof import('./src/components/Set.vue')['default']
     SocialLinks: typeof import('./src/components/SocialLinks.vue')['default']
     TimeCapsule: typeof import('./src/components/TimeCapsule.vue')['default']
+    Toast: typeof import('./src/components/Toast.vue')['default']
+    UserAvatar: typeof import('./src/components/UserAvatar.vue')['default']
   }
 }

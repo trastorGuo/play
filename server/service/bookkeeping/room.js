@@ -1,128 +1,129 @@
-/*
- * @Description: 
- * @Date: 2022-08-20 14:12:09
- * @Author: 
- * @LastEditTime: 2022-09-18 23:08:26
- */
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Room } from '../../entity/bookkeeping/room';
-import { RoomUser } from '../../entity/bookkeeping/roomUser.entity';
-import { ExpenseRecord } from '../../entity/bookkeeping/expenseRecord.entity';
-import { EventEmitter } from 'events';
-
-// SSE事件管理器
-class SSEManager extends EventEmitter {
-    private clients: Map<string, any[]> = new Map();
-
-    addClient(roomId: string, response: any) {
-        if(!this.clients.has(roomId)) {
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.RoomService = void 0;
+const common_1 = require("@nestjs/common");
+const typeorm_1 = require("@nestjs/typeorm");
+const typeorm_2 = require("typeorm");
+const room_1 = require("../../entity/bookkeeping/room");
+const roomUser_entity_1 = require("../../entity/bookkeeping/roomUser.entity");
+const expenseRecord_entity_1 = require("../../entity/bookkeeping/expenseRecord.entity");
+const events_1 = require("events");
+class SSEManager extends events_1.EventEmitter {
+    constructor() {
+        super(...arguments);
+        Object.defineProperty(this, "clients", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+    }
+    addClient(roomId, response) {
+        var _a;
+        if (!this.clients.has(roomId)) {
             this.clients.set(roomId, []);
         }
-        this.clients.get(roomId)?.push(response);
+        (_a = this.clients.get(roomId)) === null || _a === void 0 ? void 0 : _a.push(response);
     }
-
-    removeClient(roomId: string, response: any) {
+    removeClient(roomId, response) {
         const clients = this.clients.get(roomId);
-        if(clients) {
+        if (clients) {
             const index = clients.indexOf(response);
-            if(index > -1) {
+            if (index > -1) {
                 clients.splice(index, 1);
             }
-            if(clients.length === 0) {
+            if (clients.length === 0) {
                 this.clients.delete(roomId);
             }
         }
     }
-
-    broadcast(roomId: string, data: any) {
+    broadcast(roomId, data) {
         const clients = this.clients.get(roomId);
-        if(clients) {
+        if (clients) {
             clients.forEach(client => {
                 try {
                     client.write(`data: ${JSON.stringify(data)}\n\n`);
-                } catch(error) {
+                }
+                catch (error) {
                     console.error('SSE广播失败:', error);
                 }
             });
         }
     }
 }
-
 const sseManager = new SSEManager();
-
-@Injectable()
-export class RoomService {
-    constructor(
-        @InjectRepository(Room)
-        private roomRepository: Repository<Room>,
-        @InjectRepository(RoomUser)
-        private roomUserRepository: Repository<RoomUser>,
-        @InjectRepository(ExpenseRecord)
-        private expenseRecordRepository: Repository<ExpenseRecord>
-    ) {}
-
-    // 生成房间号 - 从1开始递增，避免高并发重复
-    private async generateRoomCode(): Promise<string> {
+let RoomService = class RoomService {
+    constructor(roomRepository, roomUserRepository, expenseRecordRepository) {
+        Object.defineProperty(this, "roomRepository", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: roomRepository
+        });
+        Object.defineProperty(this, "roomUserRepository", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: roomUserRepository
+        });
+        Object.defineProperty(this, "expenseRecordRepository", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: expenseRecordRepository
+        });
+    }
+    async generateRoomCode() {
         let attempts = 0;
         const maxAttempts = 10;
-        
-        while(attempts < maxAttempts) {
+        while (attempts < maxAttempts) {
             try {
-                // 获取当前最大的房间号
                 const lastRoom = await this.roomRepository
                     .createQueryBuilder('room')
-                    .where('room.roomCode REGEXP \'^[0-9]+$\'') // 只匹配纯数字房间号
+                    .where('room.roomCode REGEXP \'^[0-9]+$\'')
                     .orderBy('CAST(room.roomCode AS UNSIGNED)', 'DESC')
                     .getOne();
-                
                 let nextRoomCode = '1';
-                if(lastRoom && lastRoom.roomCode) {
+                if (lastRoom && lastRoom.roomCode) {
                     const lastCode = parseInt(lastRoom.roomCode);
-                    if(!isNaN(lastCode)) {
+                    if (!isNaN(lastCode)) {
                         nextRoomCode = (lastCode + 1).toString();
                     }
                 }
-                
-                // 检查房间号是否已存在（处理并发情况）
                 const existingRoom = await this.roomRepository.findOne({
                     where: { roomCode: nextRoomCode }
                 });
-                
-                if(!existingRoom) {
+                if (!existingRoom) {
                     return nextRoomCode;
                 }
-                
                 attempts++;
-                // 如果冲突，稍等一下再试
                 await new Promise(resolve => setTimeout(resolve, 50));
-                
-            } catch(error) {
+            }
+            catch (error) {
                 console.error('生成房间号失败:', error);
                 attempts++;
-                
-                if(attempts >= maxAttempts) {
-                    // 如果多次失败，使用时间戳作为备选方案
+                if (attempts >= maxAttempts) {
                     return Date.now().toString().slice(-8);
                 }
-                
                 await new Promise(resolve => setTimeout(resolve, 100));
             }
         }
-        
-        // 备选方案：使用时间戳
         return Date.now().toString().slice(-8);
     }
-
-    // 创建房间
-    async createRoom(data: {
-        name: string;
-        ownerId: number;
-        ownerName: string;
-    }): Promise<Room> {
+    async createRoom(data) {
         const roomCode = await this.generateRoomCode();
-
         const room = this.roomRepository.create({
             roomCode,
             name: data.name || `${data.ownerName}的房间`,
@@ -130,40 +131,25 @@ export class RoomService {
             ownerName: data.ownerName,
             currentUsers: 1
         });
-
         const savedRoom = await this.roomRepository.save(room);
-
-        // 房主自动加入房间
         await this.joinRoom(savedRoom.id, {
             userId: data.ownerId,
             nickname: data.ownerName,
             isOwner: true
         });
-
         return savedRoom;
     }
-
-    // 查询房间信息
-    async getRoomInfo(roomCode: string): Promise<Room> {
+    async getRoomInfo(roomCode) {
         const room = await this.roomRepository.findOne({
             where: { roomCode, status: 1 },
             relations: ['roomUsers', 'expenseRecords']
         });
-
-        if(!room) {
+        if (!room) {
             throw new Error('房间不存在或已关闭');
         }
-
         return room;
     }
-
-    // 加入房间
-    async joinRoom(roomId: number, userData: {
-        userId: number;
-        nickname: string;
-        isOwner?: boolean;
-    }): Promise<RoomUser> {
-        // 检查昵称是否重复（排除当前用户）
+    async joinRoom(roomId, userData) {
         const duplicateNickname = await this.roomUserRepository
             .createQueryBuilder('roomUser')
             .where('roomUser.roomId = :roomId', { roomId })
@@ -171,46 +157,32 @@ export class RoomService {
             .andWhere('roomUser.status = :status', { status: 1 })
             .andWhere('roomUser.userId != :userId', { userId: userData.userId })
             .getOne();
-
-        if(duplicateNickname) {
+        if (duplicateNickname) {
             throw new Error('昵称已被使用，请换一个昵称');
         }
-
-        // 检查用户是否已在房间中
         const existingUser = await this.roomUserRepository.findOne({
             where: { roomId, userId: userData.userId, status: 1 }
         });
-
-        if(existingUser) {
+        if (existingUser) {
             return existingUser;
         }
-
         const roomUser = this.roomUserRepository.create({
             roomId,
             userId: userData.userId,
             nickname: userData.nickname,
             isOwner: userData.isOwner ? 1 : 0
         });
-
         const savedUser = await this.roomUserRepository.save(roomUser);
-
-        // 更新房间人数
         await this.roomRepository.increment({ id: roomId }, 'currentUsers', 1);
-
         return savedUser;
     }
-
-    // 获取房间用户列表
-    async getRoomUsers(roomId: number): Promise<RoomUser[]> {
+    async getRoomUsers(roomId) {
         return this.roomUserRepository.find({
             where: { roomId, status: 1 },
             order: { isOwner: 'DESC', createdAt: 'ASC' }
         });
     }
-
-    // 更新用户昵称
-    async updateUserNickname(roomId: number, userId: number, nickname: string): Promise<RoomUser> {
-        // 检查昵称是否重复（排除当前用户）
+    async updateUserNickname(roomId, userId, nickname) {
         const duplicateNickname = await this.roomUserRepository
             .createQueryBuilder('roomUser')
             .where('roomUser.roomId = :roomId', { roomId })
@@ -218,38 +190,24 @@ export class RoomService {
             .andWhere('roomUser.status = :status', { status: 1 })
             .andWhere('roomUser.userId != :userId', { userId })
             .getOne();
-
-        if(duplicateNickname) {
+        if (duplicateNickname) {
             throw new Error('昵称已被使用，请换一个昵称');
         }
-
         const roomUser = await this.roomUserRepository.findOne({
             where: { roomId, userId, status: 1 }
         });
-
-        if(!roomUser) {
+        if (!roomUser) {
             throw new Error('用户不在房间中');
         }
-
         const oldNickname = roomUser.nickname;
         roomUser.nickname = nickname;
         const updatedUser = await this.roomUserRepository.save(roomUser);
-
-        // 更新所有相关的交易记录中的昵称
         await this.updateExpenseRecordNicknames(roomId, userId, oldNickname, nickname);
-
-        // 如果更新的是房主昵称，也要更新房间表中的ownerName
-        if(roomUser.isOwner === 1) {
-            await this.roomRepository.update(
-                { id: roomId },
-                { ownerName: nickname }
-            );
+        if (roomUser.isOwner === 1) {
+            await this.roomRepository.update({ id: roomId }, { ownerName: nickname });
         }
-
-        // 获取房间信息用于广播
         const room = await this.roomRepository.findOne({ where: { id: roomId } });
-        if(room) {
-            // 广播昵称更新事件
+        if (room) {
             sseManager.broadcast(room.roomCode, {
                 type: 'nickname_updated',
                 data: {
@@ -261,40 +219,29 @@ export class RoomService {
                 }
             });
         }
-
         return updatedUser;
     }
-
-    // 更新交易记录中的昵称
-    private async updateExpenseRecordNicknames(roomId: number, userId: number, oldNickname: string, newNickname: string): Promise<void> {
-        // 更新作为发起人的记录
+    async updateExpenseRecordNicknames(roomId, userId, oldNickname, newNickname) {
         await this.expenseRecordRepository
             .createQueryBuilder()
-            .update(ExpenseRecord)
+            .update(expenseRecord_entity_1.ExpenseRecord)
             .set({ fromUserName: newNickname })
             .where('roomId = :roomId AND fromUserId = :userId', { roomId, userId })
             .execute();
-
-        // 更新作为接收人的记录
         await this.expenseRecordRepository
             .createQueryBuilder()
-            .update(ExpenseRecord)
+            .update(expenseRecord_entity_1.ExpenseRecord)
             .set({ toUserName: newNickname })
             .where('roomId = :roomId AND toUserId = :userId', { roomId, userId })
             .execute();
-
-        // 更新作为操作者的记录
         await this.expenseRecordRepository
             .createQueryBuilder()
-            .update(ExpenseRecord)
+            .update(expenseRecord_entity_1.ExpenseRecord)
             .set({ operatorName: newNickname })
             .where('roomId = :roomId AND operatorName = :oldNickname', { roomId, oldNickname })
             .execute();
     }
-
-    // SSE连接处理
-    handleSSEConnection(roomCode: string, response: any): void {
-        // 设置SSE响应头
+    handleSSEConnection(roomCode, response) {
         response.writeHead(200, {
             'Content-Type': 'text/event-stream',
             'Cache-Control': 'no-cache',
@@ -302,105 +249,56 @@ export class RoomService {
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Headers': 'Cache-Control'
         });
-
-        // 发送连接确认
         response.write(`data: ${JSON.stringify({ type: 'connected', timestamp: new Date().toISOString() })}\n\n`);
-
-        // 添加客户端到管理器
         sseManager.addClient(roomCode, response);
-
-        // 监听连接关闭
         response.on('close', () => {
             sseManager.removeClient(roomCode, response);
         });
-
-        // 保持连接活跃
         const heartbeat = setInterval(() => {
             try {
                 response.write(`data: ${JSON.stringify({ type: 'heartbeat', timestamp: new Date().toISOString() })}\n\n`);
-            } catch(error) {
+            }
+            catch (error) {
                 clearInterval(heartbeat);
                 sseManager.removeClient(roomCode, response);
             }
-        }, 30000); // 每30秒发送心跳
-
+        }, 30000);
         response.on('close', () => {
             clearInterval(heartbeat);
         });
     }
-
-    // 广播房间事件
-    broadcastRoomEvent(roomCode: string, eventType: string, data: any): void {
+    broadcastRoomEvent(roomCode, eventType, data) {
         sseManager.broadcast(roomCode, {
             type: eventType,
             data,
             timestamp: new Date().toISOString()
         });
     }
-
-    // 添加支出记录
-    async addExpenseRecord(roomId: number, data: {
-        fromUserId: number;
-        fromUserName: string;
-        toUserId: number;
-        toUserName: string;
-        amount: number;
-        type: string;
-        note?: string;
-        operatorName: string;
-    }): Promise<ExpenseRecord> {
-        const record = this.expenseRecordRepository.create({
-            roomId,
-            ...data
-        });
-
+    async addExpenseRecord(roomId, data) {
+        const record = this.expenseRecordRepository.create(Object.assign({ roomId }, data));
         const savedRecord = await this.expenseRecordRepository.save(record);
-
-        // 更新用户余额
-        if(data.type === 'pay') {
-            // 付款方减少余额
-            await this.roomUserRepository.decrement(
-                { roomId, userId: data.fromUserId },
-                'balance',
-                data.amount
-            );
-            // 收款方增加余额
-            await this.roomUserRepository.increment(
-                { roomId, userId: data.toUserId },
-                'balance',
-                data.amount
-            );
+        if (data.type === 'pay') {
+            await this.roomUserRepository.decrement({ roomId, userId: data.fromUserId }, 'balance', data.amount);
+            await this.roomUserRepository.increment({ roomId, userId: data.toUserId }, 'balance', data.amount);
         }
-
         return savedRecord;
     }
-
-    // 获取房间记录
-    async getRoomRecords(roomId: number): Promise<ExpenseRecord[]> {
+    async getRoomRecords(roomId) {
         return this.expenseRecordRepository.find({
             where: { roomId },
             order: { createdAt: 'DESC' }
         });
     }
-
-    // 获取房间活动（包含交易记录和用户加入记录）
-    async getRoomActivities(roomId: number): Promise<any[]> {
-        // 获取交易记录
+    async getRoomActivities(roomId) {
         const expenseRecords = await this.expenseRecordRepository.find({
             where: { roomId },
             order: { createdAt: 'DESC' }
         });
-
-        // 获取用户加入记录
         const userJoinRecords = await this.roomUserRepository.find({
             where: { roomId, status: 1 },
             order: { createdAt: 'ASC' }
         });
-
-        // 整合活动数据
         const activities = [];
-
-        // 添加交易记录
         expenseRecords.forEach(record => {
             activities.push({
                 id: `transaction_${record.id}`,
@@ -413,8 +311,6 @@ export class RoomService {
                 data: record
             });
         });
-
-        // 添加用户加入记录
         userJoinRecords.forEach(user => {
             activities.push({
                 id: `user_joined_${user.id}`,
@@ -425,40 +321,37 @@ export class RoomService {
                 data: user
             });
         });
-
-        // 按时间排序（最新的在前面）
         return activities.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
-
-    // 添加用户到房间
-    async addUserToRoom(roomCode: string, userData: {
-        userId: number;
-        nickname: string;
-    }): Promise<RoomUser> {
+    async addUserToRoom(roomCode, userData) {
         const room = await this.getRoomInfo(roomCode);
-        
-        if(room.currentUsers >= room.maxUsers) {
+        if (room.currentUsers >= room.maxUsers) {
             throw new Error('房间人数已满');
         }
-
         return this.joinRoom(room.id, {
             userId: userData.userId,
             nickname: userData.nickname
         });
     }
-
-    // 离开房间
-    async leaveRoom(roomId: number, userId: number): Promise<void> {
+    async leaveRoom(roomId, userId) {
         const roomUser = await this.roomUserRepository.findOne({
             where: { roomId, userId, status: 1 }
         });
-
-        if(roomUser) {
+        if (roomUser) {
             roomUser.status = 0;
             await this.roomUserRepository.save(roomUser);
-            
-            // 更新房间人数
             await this.roomRepository.decrement({ id: roomId }, 'currentUsers', 1);
         }
     }
-}
+};
+RoomService = __decorate([
+    (0, common_1.Injectable)(),
+    __param(0, (0, typeorm_1.InjectRepository)(room_1.Room)),
+    __param(1, (0, typeorm_1.InjectRepository)(roomUser_entity_1.RoomUser)),
+    __param(2, (0, typeorm_1.InjectRepository)(expenseRecord_entity_1.ExpenseRecord)),
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository])
+], RoomService);
+exports.RoomService = RoomService;
+//# sourceMappingURL=room.js.map

@@ -21,7 +21,17 @@ module.exports = defineConfig({
         config.resolve.alias.set('@', resolve('src'));
     },
     devServer: {
-        allowedHosts: ['localhost']
+        allowedHosts: ['localhost'],
+        port: 8083,
+        proxy: {
+            '/api': {
+                target: 'http://localhost:6015',
+                changeOrigin: true,
+                secure: false,
+                logLevel: 'debug'
+            }
+        },
+        historyApiFallback: true
     },
     pages: {
         index: {

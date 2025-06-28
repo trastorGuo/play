@@ -8,6 +8,9 @@ import { Module } from '@nestjs/common';
 import { TestModule }  from './test/test';
 import { RoomModule }  from './bookkeeping/room';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { Room } from '../entity/bookkeeping/room';
+import { RoomUser } from '../entity/bookkeeping/roomUser.entity';
+import { ExpenseRecord } from '../entity/bookkeeping/expenseRecord.entity';
 
 @Module({
     imports: [
@@ -20,7 +23,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
             username: 'trastor',
             password: 'ab1997gz0314',
             database: 'play',
-            entities: [__dirname + '/**/*.ts'],
+            entities: [Room, RoomUser, ExpenseRecord],
             autoLoadEntities: true,
             synchronize: true
         })
