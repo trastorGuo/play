@@ -15,7 +15,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
         RoomModule,
         TypeOrmModule.forRoot({
             type: 'mysql',
-            host: '45.40.200.146',
+            host: '81.68.255.143',
             port: 3306,
             username: 'trastor',
             password: 'ab1997gz0314',
