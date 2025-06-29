@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API 地址测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>API 地址配置测试</h1>
+        
+        <div>
+            <h3>当前环境信息：</h3>
+            <div id="env-info"></div>
+        </div>
+        
+        <div>
+            <h3>测试 API 请求：</h3>
+            <button onclick="testCreateRoom()">测试创建房间 API</button>
+            <button onclick="testDirectApi()">直接测试 API 地址</button>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        // 显示环境信息
+        function showEnvInfo() {
+            const hostname = window.location.hostname;
+            const protocol = window.location.protocol;
+            const port = window.location.port;
+            const isDev = typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development';
+            
+            let baseURL = '';
+            if (isDev) {
+                baseURL = '（开发环境，使用代理）';
+            } else if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.')) {
+                baseURL = 'http://localhost:6015';
+            } else {
+                baseURL = protocol + '//' + hostname;
+            }
+            
+            document.getElementById('env-info').innerHTML = `
+                <div class="result">
+                    <strong>当前域名：</strong> ${hostname}<br>
+                    <strong>协议：</strong> ${protocol}<br>
+                    <strong>端口：</strong> ${port || '默认'}<br>
+                    <strong>计算的 API 基础地址：</strong> ${baseURL}
+                </div>
+            `;
+        }
+
+        // 测试创建房间 API
+        function testCreateRoom() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML += '<div class="result">正在测试创建房间 API...</div>';
+            
+            fetch('/api/room/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: 'API测试房间',
+                    description: '这是一个API测试'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                resultsDiv.innerHTML += `<div class="result success">
+                    <strong>API 请求成功！</strong><br>
+                    响应数据：${JSON.stringify(data, null, 2)}
+                </div>`;
+            })
+            .catch(error => {
+                resultsDiv.innerHTML += `<div class="result error">
+                    <strong>API 请求失败：</strong><br>
+                    错误信息：${error.message}
+                </div>`;
+            });
+        }
+
+        // 直接测试 API 地址
+        function testDirectApi() {
+            const resultsDiv = document.getElementById('results');
+            const hostname = window.location.hostname;
+            const protocol = window.location.protocol;
+            
+            let apiUrl;
+            if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.')) {
+                apiUrl = 'http://localhost:6015/api/room/create';
+            } else {
+                apiUrl = protocol + '//' + hostname + '/api/room/create';
+            }
+            
+            resultsDiv.innerHTML += `<div class="result">正在测试直接 API 地址：${apiUrl}</div>`;
+            
+            fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: '直接API测试房间',
+                    description: '这是一个直接API测试'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                resultsDiv.innerHTML += `<div class="result success">
+                    <strong>直接 API 请求成功！</strong><br>
+                    响应数据：${JSON.stringify(data, null, 2)}
+                </div>`;
+            })
+            .catch(error => {
+                resultsDiv.innerHTML += `<div class="result error">
+                    <strong>直接 API 请求失败：</strong><br>
+                    错误信息：${error.message}
+                </div>`;
+            });
+        }
+
+        // 页面加载时显示环境信息
+        window.onload = function() {
+            showEnvInfo();
+        };
+    </script>
+</body>
+</html> 

@@ -22,11 +22,6 @@ export const getRoomRecords = (roomCode) => {
   return get(`/api/room/records/${roomCode}`);
 };
 
-// 获取房间活动（包含交易记录和用户加入记录）
-export const getRoomActivities = (roomCode) => {
-  return get(`/api/room/activities/${roomCode}`);
-};
-
 // 更新昵称
 export const updateNickname = (data) => {
   return post('/api/room/updateNickname', data);

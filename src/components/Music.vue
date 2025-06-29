@@ -7,18 +7,18 @@
     v-show="store.musicOpenState"
   >
     <div class="btns">
-      <span @click="openMusicList()">音乐列表</span>
-      <span @click="store.musicOpenState = false">回到一言</span>
+          <span @click="debounceClick(openMusicList, 'openMusicList')">音乐列表</span>
+    <span @click="debounceClick(() => store.musicOpenState = false, 'closeMusic')">回到一言</span>
     </div>
     <div class="control">
-      <go-start theme="filled" size="30" fill="#efefef" @click="changeMusicIndex(0)" />
+      <go-start theme="filled" size="30" fill="#efefef" @click="debounceClick(() => changeMusicIndex(0), 'prevSong')" />
       <Transition name="fade" mode="out-in">
-        <div :key="store.playerState" class="state" @click="changePlayState">
+        <div :key="store.playerState" class="state" @click="debounceClick(changePlayState, 'playToggle')">
           <play-one theme="filled" size="50" fill="#efefef" v-show="!store.playerState" />
           <pause theme="filled" size="50" fill="#efefef" v-show="store.playerState" />
         </div>
       </Transition>
-      <go-end theme="filled" size="30" fill="#efefef" @click="changeMusicIndex(1)" />
+      <go-end theme="filled" size="30" fill="#efefef" @click="debounceClick(() => changeMusicIndex(1), 'nextSong')" />
     </div>
     <div class="menu">
       <div class="name" v-show="!volumeShow">
@@ -53,7 +53,7 @@
             theme="filled"
             size="28"
             fill="#ffffff60"
-            @click="closeMusicList()"
+            @click="debounceClick(closeMusicList, 'closeMusicList')"
           />
           <Player
             ref="playerRef"
@@ -81,6 +81,7 @@ import {
 } from "@icon-park/vue-next";
 import Player from "@/components/Player.vue";
 import { mainStore } from "@/store";
+import { debounceClick } from '@/utils/debounce.js';
 const store = mainStore();
 
 // 音量条数据

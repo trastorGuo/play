@@ -14,13 +14,15 @@ const roomUser_entity_1 = require("../../entity/bookkeeping/roomUser.entity");
 const expenseRecord_entity_1 = require("../../entity/bookkeeping/expenseRecord.entity");
 const room_2 = require("../../controller/bookkeeping/room");
 const room_3 = require("../../service/bookkeeping/room");
+const redis_service_1 = require("../../service/redis.service");
+const room_gateway_1 = require("../../gateway/room.gateway");
 let RoomModule = class RoomModule {
 };
 RoomModule = __decorate([
     (0, common_1.Module)({
         imports: [typeorm_1.TypeOrmModule.forFeature([room_1.Room, roomUser_entity_1.RoomUser, expenseRecord_entity_1.ExpenseRecord])],
         controllers: [room_2.RoomController],
-        providers: [room_3.RoomService]
+        providers: [room_3.RoomService, redis_service_1.RedisService, room_gateway_1.RoomGateway]
     })
 ], RoomModule);
 exports.RoomModule = RoomModule;

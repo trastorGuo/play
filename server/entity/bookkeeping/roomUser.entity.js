@@ -50,12 +50,6 @@ let RoomUser = class RoomUser {
             writable: true,
             value: void 0
         });
-        Object.defineProperty(this, "isOwner", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
         Object.defineProperty(this, "createdAt", {
             enumerable: true,
             configurable: true,
@@ -100,10 +94,6 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'int', default: 1, comment: '状态：1-在房间，0-已离开' }),
     __metadata("design:type", Number)
 ], RoomUser.prototype, "status", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'int', default: 0, comment: '是否是房主：1-是，0-否' }),
-    __metadata("design:type", Number)
-], RoomUser.prototype, "isOwner", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)({ comment: '加入时间' }),
     __metadata("design:type", Date)

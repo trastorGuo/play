@@ -11,7 +11,7 @@
       <div
         class="open-music"
         v-show="openMusicShow && store.musicIsOk"
-        @click="store.musicOpenState = true"
+        @click="debounceClick(() => store.musicOpenState = true, 'openMusic')"
       >
         <music-menu theme="filled" size="18" fill="#efefef" />
         <span>打开音乐播放器</span>
@@ -19,7 +19,7 @@
     </Transition>
     <!-- 一言内容 -->
     <Transition name="el-fade-in-linear" mode="out-in">
-      <div :key="hitokotoData.text" class="content" @click="updateHitokoto">
+      <div :key="hitokotoData.text" class="content" @click="debounceClick(updateHitokoto, 'updateHitokoto')">
         <span class="text">{{ hitokotoData.text }}</span>
         <span class="from">-「&nbsp;{{ hitokotoData.from }}&nbsp;」</span>
       </div>
@@ -32,6 +32,7 @@ import { MusicMenu, Error } from "@icon-park/vue-next";
 import { getHitokoto } from "@/api";
 import { mainStore } from "@/store";
 import debounce from "@/utils/debounce.js";
+import { debounceClick } from '@/utils/debounce.js';
 
 const store = mainStore();
 

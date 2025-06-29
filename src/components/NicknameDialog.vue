@@ -12,9 +12,9 @@
     <template #header>
       <div class="dialog-header">
         <span class="dialog-title">{{ title }}</span>
-        <button v-if="showClose" class="dialog-close-btn" @click="handleClose">
+        <button v-if="showClose" class="dialog-close-btn" @click="debounceClick(handleClose, 'closeDialog')">
           <svg class="close-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M18 6L6 18M6 6L18 18" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </button>
       </div>
@@ -44,7 +44,7 @@
       <div class="dialog-footer">
         <el-button 
           type="primary" 
-          @click="handleConfirm" 
+          @click="debounceClick(handleConfirm, 'confirmNickname', 800)" 
           size="large"
           :loading="loading"
           :disabled="!isValidNickname"
@@ -58,10 +58,11 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
-import { ElDialog, ElInput, ElButton } from 'element-plus'
-import UserAvatar from './UserAvatar.vue'
-import { validateNickname } from '@/utils/userUtils'
+import { ref, computed, watch } from 'vue';
+import { ElDialog, ElInput, ElButton } from 'element-plus';
+import UserAvatar from './UserAvatar.vue';
+import { validateNickname } from '@/utils/userUtils';
+import { debounceClick } from '@/utils/debounce.js';
 
 const props = defineProps({
   modelValue: {
@@ -95,39 +96,43 @@ const props = defineProps({
   showClose: {
     type: Boolean,
     default: true
+  },
+  initialValue: {
+    type: String,
+    default: ''
   }
-})
+});
 
-const emit = defineEmits(['update:modelValue', 'confirm', 'close'])
+const emit = defineEmits(['update:modelValue', 'confirm', 'close']);
 
-const nickname = ref('')
+const nickname = ref('');
 
 const visible = computed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value)
-})
+});
 
 const isValidNickname = computed(() => {
-  const validation = validateNickname(nickname.value)
-  return validation.valid
-})
+  const validation = validateNickname(nickname.value);
+  return validation.valid;
+});
 
 const handleConfirm = () => {
   if (isValidNickname.value) {
-    emit('confirm', nickname.value.trim())
+    emit('confirm', nickname.value.trim());
   }
-}
+};
 
 const handleClose = () => {
-  emit('close')
-  visible.value = false
-}
+  emit('close');
+  visible.value = false;
+};
 
 watch(visible, (newValue) => {
   if (newValue) {
-    nickname.value = ''
+    nickname.value = props.initialValue;
   }
-})
+});
 </script>
 
 <style scoped>
@@ -197,7 +202,7 @@ watch(visible, (newValue) => {
   align-items: center;
   justify-content: center;
   position: relative;
-  padding: 20px 24px;
+  padding: 12px 20px;
   background: #fff;
 }
 
@@ -240,6 +245,8 @@ watch(visible, (newValue) => {
   width: 18px;
   height: 18px;
   color: #1a1a1a !important;
+  stroke: #1a1a1a !important;
+  fill: #1a1a1a !important;
   stroke-width: 3;
 }
 
@@ -289,11 +296,11 @@ watch(visible, (newValue) => {
 }
 
 :deep(.custom-dialog .el-dialog__body) {
-  padding: 24px;
+  padding: 16px 20px;
 }
 
 :deep(.custom-dialog .el-dialog__footer) {
-  padding: 16px 24px 24px;
+  padding: 12px 20px 16px;
   border-top: 1px solid #eee;
 }
 </style>

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简单WebSocket测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .log { background: #f0f0f0; padding: 10px; height: 300px; overflow-y: auto; margin: 10px 0; }
+        button { padding: 10px 20px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>简单WebSocket连接测试</h1>
+    <button onclick="testConnection()">测试连接</button>
+    <button onclick="clearLog()">清空日志</button>
+    <div id="log" class="log"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${time}] ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        function testConnection() {
+            log('开始测试WebSocket连接...');
+            
+            try {
+                const socket = io(window.location.origin, {
+                    transports: ['websocket', 'polling']
+                });
+
+                socket.on('connect', () => {
+                    log('✅ WebSocket连接成功！Socket ID: ' + socket.id);
+                });
+
+                socket.on('connect_error', (error) => {
+                    log('❌ 连接失败: ' + error.message);
+                });
+
+                socket.on('disconnect', (reason) => {
+                    log('🔌 连接断开: ' + reason);
+                });
+
+                // 测试加入房间
+                setTimeout(() => {
+                    log('测试加入房间...');
+                    socket.emit('joinRoom', {
+                        roomCode: '939605',
+                        userId: '111',
+                        nickname: '测试用户'
+                    });
+                }, 2000);
+
+                socket.on('roomJoined', (data) => {
+                    log('🏠 成功加入房间: ' + JSON.stringify(data));
+                });
+
+                socket.on('userJoined', (data) => {
+                    log('👤 用户加入: ' + JSON.stringify(data));
+                });
+
+                socket.on('error', (data) => {
+                    log('❌ 错误: ' + JSON.stringify(data));
+                });
+
+            } catch (error) {
+                log('❌ 创建连接时出错: ' + error.message);
+            }
+        }
+
+        log('页面已加载，点击"测试连接"开始测试');
+    </script>
+</body>
+</html> 

@@ -41,7 +41,6 @@
 <script setup>
 import { MusicOne } from "@icon-park/vue-next";
 import { mainStore } from "@/store";
-import config from "@/../package.json";
 
 const store = mainStore();
 const fullYear = new Date().getFullYear();
@@ -52,7 +51,6 @@ const startYear = ref(
   process.env.VUE_APP_SITE_START?.length >= 4 ? 
   process.env.VUE_APP_SITE_START.substring(0, 4) : null
 );
-const siteIcp = ref(process.env.VUE_APP_SITE_ICP);
 const siteAuthor = ref(process.env.VUE_APP_SITE_AUTHOR);
 const siteUrl = computed(() => {
   const url = process.env.VUE_APP_SITE_URL;

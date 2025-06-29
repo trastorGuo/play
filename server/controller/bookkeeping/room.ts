@@ -111,23 +111,7 @@ export class RoomController {
         }
     }
 
-    // 获取房间活动（包含交易记录和用户加入记录）
-    @Get('activities/:roomCode')
-    async getRoomActivities(@Param('roomCode') roomCode: string) {
-        try {
-            const room = await this.roomService.getRoomInfo(roomCode);
-            const activities = await this.roomService.getRoomActivities(room.id);
-            return {
-                result: 1,
-                data: activities
-            };
-        } catch(error: any) {
-            return {
-                result: 0,
-                error_msg: error.message || '获取房间活动失败'
-            };
-        }
-    }
+
 
     // 更新昵称
     @Post('updateNickname')

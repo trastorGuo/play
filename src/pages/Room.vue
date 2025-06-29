@@ -24,7 +24,7 @@
         >
           <div class="users-horizontal-list">
             <!-- 添加好友按钮 - 放在第一位 -->
-            <div class="add-user-card" @click="showAddUserDialog">
+            <div class="add-user-card" @click="debounceClick(showAddUserDialog, 'showAddUser')">
               <div class="add-icon">+</div>
               <div class="add-text">邀请</div>
             </div>
@@ -33,7 +33,7 @@
               v-for="user in sortedUsers" 
               :key="user.id"
               class="user-card"
-              @click="handleUserClick(user)"
+              @click="debounceClick(() => handleUserClick(user), 'handleUser')"
             >
               <!-- 当前用户角标 -->
               <div v-if="user.id === currentUserId" class="user-badge">我</div>
@@ -63,47 +63,37 @@
           <h3 class="activity-title">房间动态</h3>
         </div>
         <div class="activity-list" v-if="activityList.length > 0">
-          <div 
-            v-for="activity in activityList" 
-            :key="activity.id"
-            class="activity-item"
-            :class="[
-              activity.type, 
-              { 'related-to-me': activity.isRelatedToCurrentUser },
-              { 'join-room': activity.type === 'status' && activity.action === 'join' }
-            ]"
-          >
-            <!-- 交易记录 -->
-            <div v-if="activity.type === 'transaction'" class="transaction-content">
-              <div class="transaction-info">
-                <span class="activity-time">
-                  {{ formatDetailTime(activity.createdAt) }}
-                </span>
-                <span class="from-user">{{ truncateName(activity.fromUserName) }}</span>
-                <span class="action">{{ getActionText(activity.transactionType) }}</span>
-                <span class="to-user">{{ truncateName(activity.toUserName) }}</span>
-                <span class="amount" :class="getAmountClass(activity.transactionType)">
-                  ¥{{ activity.amount }}
-                </span>
+          <transition-group name="activity-slide" tag="div" class="activity-list-wrapper">
+            <div 
+              v-for="activity in activityList" 
+              :key="activity.id"
+              class="activity-item"
+              :class="[
+                activity.type,
+                { 'related-to-me': activity.type === 'transaction' && activity.isRelatedToCurrentUser }
+              ]"
+            >
+              <!-- 用户加入房间 -->
+              <div v-if="activity.type === 'user_joined'" class="user-joined">
+                {{ formatDetailTime(activity.createdAt) }} {{ truncateName(activity.userName) }}进入了房间
+              </div>
+              
+              <!-- 交易记录 -->
+              <div v-else-if="activity.type === 'transaction'" class="transaction-content">
+                <div class="transaction-info">
+                  <span class="activity-time">
+                    {{ formatDetailTime(activity.createdAt) }}
+                  </span>
+                  <span class="from-user">{{ truncateName(activity.fromUserName) }}</span>
+                  <span class="action">{{ getActionText(activity.transactionType) }}</span>
+                  <span class="to-user">{{ truncateName(activity.toUserName) }}</span>
+                  <span class="amount" :class="getAmountClass(activity.transactionType)">
+                    ¥{{ activity.amount }}
+                  </span>
+                </div>
               </div>
             </div>
-            
-            <!-- 状态消息 -->
-            <div v-else-if="activity.type === 'status'" class="status-content">
-              <!-- 加入房间消息特殊样式 -->
-              <div v-if="activity.action === 'join'" class="join-room-text">
-                {{ truncateName(activity.userName) }} 加入了房间
-              </div>
-              <!-- 其他状态消息 -->
-              <div v-else class="status-info">
-                <span class="activity-time">
-                  {{ formatDetailTime(activity.createdAt) }}
-                </span>
-                <span class="user-name">{{ truncateName(activity.userName) }}</span>
-                <span class="status-text">{{ activity.message }}</span>
-              </div>
-            </div>
-          </div>
+          </transition-group>
         </div>
         <div v-else class="no-activity">
           房间还没有任何动态记录
@@ -127,9 +117,9 @@
       <template #header>
         <div class="dialog-header">
           <span class="dialog-title">分享房间</span>
-          <button class="dialog-close-btn" @click="shareDialogVisible = false">
+          <button class="dialog-close-btn" @click="debounceClick(() => shareDialogVisible = false, 'closeShare')">
             <svg class="close-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M18 6L6 18M6 6L18 18" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
         </div>
@@ -150,17 +140,17 @@
         </div>
         
         <div class="share-buttons">
-          <el-button @click="copyRoomCode" type="info" plain size="small">
+          <el-button @click="debounceClick(copyRoomCode, 'copyCode')" type="info" plain size="small">
             复制房间号
           </el-button>
-          <el-button @click="copyRoomLink" type="success" plain size="small">
+          <el-button @click="debounceClick(copyRoomLink, 'copyLink')" type="success" plain size="small">
             复制链接
           </el-button>
         </div>
       </div>
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" @click="shareRoom" size="large" class="confirm-btn">
+          <el-button type="primary" @click="debounceClick(shareRoom, 'shareRoom')" size="large" class="confirm-btn">
             {{ canShare ? '系统分享' : '复制链接' }}
           </el-button>
         </div>
@@ -168,48 +158,19 @@
     </el-dialog>
     
     <!-- 修改昵称弹窗 -->
-    <el-dialog
+    <NicknameDialog 
       v-model="editNameDialogVisible"
       title="修改昵称"
-      width="85%"
-      :max-width="300"
-      center
-      :show-close="false"
-      class="custom-dialog"
-    >
-      <template #header>
-        <div class="dialog-header">
-          <span class="dialog-title">修改昵称</span>
-          <button class="dialog-close-btn" @click="editNameDialogVisible = false">
-            <svg class="close-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </button>
-        </div>
-      </template>
-      <div class="edit-name-dialog-content">
-        <el-input
-          v-model="editNameForm.nickname"
-          placeholder="请输入新昵称"
-          size="large"
-          maxlength="10"
-          show-word-limit
-        />
-      </div>
-      <template #footer>
-        <div class="dialog-footer">
-          <el-button 
-            type="primary" 
-            @click="updateNickname" 
-            size="large"
-            :disabled="!editNameForm.nickname.trim()"
-            class="confirm-btn"
-          >
-            确认
-          </el-button>
-        </div>
-      </template>
-    </el-dialog>
+      placeholder="请输入新昵称"
+      confirm-text="确认修改"
+      loading-text="修改中..."
+      :loading="false"
+      :initial-value="editNameForm.nickname"
+      :tips="['昵称不能为空', '昵称不能与房间内其他人重复']"
+      :show-close="true"
+      @confirm="handleEditNameConfirm"
+      @close="editNameDialogVisible = false"
+    />
 
     <!-- 支出分数弹窗 -->
     <el-dialog
@@ -227,7 +188,7 @@
           <span class="dialog-title">支出分数</span>
           <button class="dialog-close-btn" @click="expenseDialogVisible = false">
             <svg class="close-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M18 6L6 18M6 6L18 18" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
         </div>
@@ -269,7 +230,7 @@
               type="primary" 
               size="large"
               class="submit-btn"
-              @click="addExpense"
+              @click="debounceClick(addExpense, 'addExpense', 800)"
               :disabled="!expenseForm.amount"
             >
               支出
@@ -295,7 +256,7 @@
           <span class="dialog-title">设置昵称</span>
           <button class="dialog-close-btn" @click="addUserDialogVisible = false">
             <svg class="close-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M18 6L6 18M6 6L18 18" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
         </div>
@@ -324,7 +285,7 @@
         <div class="dialog-footer">
           <el-button 
             type="primary" 
-            @click="addUser" 
+            @click="debounceClick(addUser, 'addUser', 800)" 
             size="large"
             :disabled="!newUserName.trim()"
             class="confirm-btn"
@@ -401,22 +362,24 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, nextTick, onUnmounted } from 'vue';
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { ElDialog, ElInput, ElButton, ElMessageBox } from 'element-plus';
+import { ElDialog, ElInput, ElButton } from 'element-plus';
 import Toast from '@/utils/toast.js';
+import { debounceClick } from '@/utils/debounce.js';
 import PageNavigation from '@/components/PageNavigation.vue';
 import UserAvatar from '@/components/UserAvatar.vue';
 import NicknameDialog from '@/components/NicknameDialog.vue';
-import { getRoomInfo as apiGetRoomInfo, getRoomRecords as apiGetRoomRecords, getRoomActivities as apiGetRoomActivities, updateNickname as apiUpdateNickname, addExpense as apiAddExpense, joinRoom as apiJoinRoom } from '@/api/room';
-import { generateAvatar, getUserSession, RoomUserSession, SSEManager } from '@/utils/userUtils';
+import { getRoomInfo as apiGetRoomInfo, updateNickname as apiUpdateNickname, addExpense as apiAddExpense, joinRoom as apiJoinRoom } from '@/api/room';
+import { generateAvatar, getUserSession, RoomUserSession } from '@/utils/userUtils';
+import wsManager from '@/utils/websocket';
+import { usePageMeta, setPageMeta, getPageIcon } from '@/common/utils/meta.js';
 
 const route = useRoute();
 const router = useRouter();
 
 // 房间信息
 const roomId = computed(() => route.params.roomId);
-const isOwner = computed(() => route.query.isOwner === 'true');
 const roomUrl = computed(() => `${window.location.origin}/room/${roomId.value}`);
 const canShare = computed(() => navigator.share && typeof navigator.share === 'function');
 const currentUserId = ref(null); // 当前用户的RoomUser记录ID，动态设置
@@ -463,10 +426,9 @@ const activityList = computed(() => {
                                activity.toUserName === currentUserNickname
       };
     } else if (activity.type === 'user_joined') {
-      // 用户加入记录
+      // 用户加入记录，保持原有类型
       return {
         ...activity,
-        type: 'status',
         isRelatedToCurrentUser: activity.userName === currentUserNickname
       };
     }
@@ -553,20 +515,39 @@ const endTouch = () => {
   dragState.isDragging = false;
 };
 
-// 显示分享弹窗
-const showShareDialog = () => {
-  shareDialogVisible.value = true;
+// 设置基础页面 Meta 信息
+usePageMeta('room');
+
+// 动态更新房间页面的 Meta 信息
+const updateRoomMeta = (roomData) => {
+  if (roomData) {
+    const userCount = roomData.roomUsers ? roomData.roomUsers.filter(user => user.status === 1).length : 0;
+    const roomName = roomData.name || `房间 ${roomId.value}`;
+    
+    setPageMeta({
+      title: `${roomName} - 打牌记账`,
+      description: `加入房间 ${roomId.value}，和朋友一起记录游戏输赢。当前房间有 ${userCount} 位玩家在线。`,
+      keywords: `游戏房间,房间${roomId.value},打牌记账,多人游戏,实时同步,${roomData.ownerName || ''},trastor`,
+      image: getPageIcon('room'),
+      url: `https://www.trastor.com/room/${roomId.value}`,
+      favicon: getPageIcon('room')
+    });
+  }
 };
 
 // 分享房间
 const shareRoom = () => {
+  const roomName = roomInfo.value?.name || `房间 ${roomId.value}`;
+  const userCount = users.value ? users.value.length : 0;
+  
   if(canShare.value) {
     navigator.share({
-      title: '打牌记账房间',
-      text: `房间号: ${roomId.value}`,
+      title: `${roomName} - 打牌记账`,
+      text: `邀请你加入房间 ${roomId.value}，一起记录游戏输赢！当前有 ${userCount} 位玩家在线。`,
       url: roomUrl.value
     }).then(() => {
       shareDialogVisible.value = false;
+      Toast.success('分享成功！');
     }).catch(err => {
       console.log('分享失败:', err);
       copyRoomLink();
@@ -597,7 +578,7 @@ const copyRoomCode = async () => {
 const copyRoomLink = async () => {
   try {
     await navigator.clipboard.writeText(roomUrl.value);
-    Toast.success('房间链接已复制到剪贴板');
+    Toast.success('房间链接已复制到剪贴板！\n也可以点击浏览器右上角"分享"按钮分享给好友', 4000);
   } catch(err) {
     // 降级处理
     const textArea = document.createElement('textarea');
@@ -606,7 +587,7 @@ const copyRoomLink = async () => {
     textArea.select();
     document.execCommand('copy');
     document.body.removeChild(textArea);
-    Toast.success('房间链接已复制到剪贴板');
+    Toast.success('房间链接已复制到剪贴板！\n也可以点击浏览器右上角"分享"按钮分享给好友', 4000);
   }
   shareDialogVisible.value = false;
 };
@@ -632,29 +613,26 @@ const handleUserClick = (user) => {
   }
 };
 
-// 更新昵称
-const updateNickname = async () => {
-  if(!editNameForm.nickname.trim()) {
+// 处理修改昵称确认
+const handleEditNameConfirm = async (newNickname) => {
+  if(!newNickname.trim()) {
     Toast.warning('请输入昵称');
     return;
   }
   
   try {
-    // 保存旧昵称用于更新记录
-    const oldNickname = users.value.find(u => u.userId === editNameForm.userId)?.nickname;
-    
     // 调用API更新昵称
     const response = await apiUpdateNickname({
       roomCode: roomId.value,
       userId: editNameForm.userId,
-      nickname: editNameForm.nickname.trim()
+      nickname: newNickname.trim()
     });
     
     if(response.result === 1 && response.data.result === 1) {
       Toast.success(response.data.message || '昵称更新成功');
       editNameDialogVisible.value = false;
       
-      // 后端会通过SSE广播昵称更新事件，前端会自动接收并更新数据
+      // 后端会通过WebSocket广播昵称更新事件，前端会自动接收并更新数据
       // 这里直接重新加载数据确保数据同步
       await loadRoomData();
     } else {
@@ -663,26 +641,6 @@ const updateNickname = async () => {
   } catch(error) {
     Toast.error('网络错误，更新昵称失败');
     console.error('更新昵称失败:', error);
-  }
-};
-
-// 显示记账弹窗
-const showExpenseDialog = () => {
-  // 确保users.value是数组
-  if(!Array.isArray(users.value)) {
-    Toast.warning('用户数据加载中，请稍后再试');
-    return;
-  }
-  
-  // 从底部导航点击时，选择第一个非当前用户
-  const otherUsers = users.value.filter(u => u.id !== currentUserId.value);
-  if(otherUsers.length > 0) {
-    expenseForm.fromUser = users.value.find(u => u.id === currentUserId.value);
-    expenseForm.toUser = otherUsers[0];
-    expenseForm.amount = '';
-    expenseDialogVisible.value = true;
-  } else {
-    Toast.warning('房间中需要至少两个人才能记账');
   }
 };
 
@@ -728,7 +686,8 @@ const addExpense = async () => {
 const showAddUserDialog = async () => {
   try {
     await navigator.clipboard.writeText(roomUrl.value);
-    Toast.success('房间链接已复制到剪贴板，分享给好友即可加入房间！');
+    // 复制成功后的提示，包含右上角分享的提示
+    Toast.success('房间链接已复制到剪贴板！\n也可以点击浏览器右上角"分享"按钮分享给好友', 4000);
   } catch(err) {
     // 降级处理
     const textArea = document.createElement('textarea');
@@ -737,7 +696,7 @@ const showAddUserDialog = async () => {
     textArea.select();
     document.execCommand('copy');
     document.body.removeChild(textArea);
-    Toast.success('房间链接已复制到剪贴板，分享给好友即可加入房间！');
+    Toast.success('房间链接已复制到剪贴板！\n也可以点击浏览器右上角"分享"按钮分享给好友', 4000);
   }
 };
 
@@ -775,11 +734,14 @@ const addUser = async () => {
 // 加载房间数据
 const loadRoomData = async () => {
   try {
-    // 获取房间信息（包含用户列表和交易记录）
+    // 获取房间信息（包含用户列表、交易记录和活动时间线）
     const roomResponse = await apiGetRoomInfo(roomId.value);
     if(roomResponse.data && roomResponse.data.result === 1) {
       const roomData = roomResponse.data.data;
       roomInfo.value = roomData;
+      
+      // 更新页面 Meta 信息，包含房间号和用户数量
+      updateRoomMeta(roomData);
       
       // 从房间信息中提取用户列表
       if(roomData.roomUsers && Array.isArray(roomData.roomUsers)) {
@@ -801,6 +763,16 @@ const loadRoomData = async () => {
       } else {
         users.value = [];
       }
+
+      // 从房间信息中提取活动时间线
+      if(roomData.activities && Array.isArray(roomData.activities)) {
+        activities.value = roomData.activities;
+        // 提取交易记录用于兼容性
+        records.value = activities.value.filter(item => item.type === 'transaction').map(item => item.data || item);
+      } else {
+        activities.value = [];
+        records.value = [];
+      }
     } else {
       // 房间不存在的情况
       Toast.error(roomResponse.data?.error_msg || '房间不存在或已关闭');
@@ -810,37 +782,9 @@ const loadRoomData = async () => {
       return;
     }
     
-    // 获取房间活动（包含交易记录和用户加入记录）
-    const activitiesResponse = await apiGetRoomActivities(roomId.value);
-    if(activitiesResponse.data && activitiesResponse.data.result === 1) {
-      activities.value = Array.isArray(activitiesResponse.data.data) ? activitiesResponse.data.data : [];
-      // 提取交易记录用于兼容性
-      records.value = activities.value.filter(item => item.type === 'transaction').map(item => item.data || item);
-    } else {
-      activities.value = []; // 确保在失败时也保持数组结构
-      records.value = [];
-    }
-    
   } catch(error) {
     console.error('加载房间数据失败:', error);
     Toast.error('加载房间数据失败');
-  }
-};
-
-// 格式化时间
-const formatTime = (timeString) => {
-  const date = new Date(timeString);
-  const now = new Date();
-  const diff = now - date;
-  
-  if(diff < 60000) { // 1分钟内
-    return '刚刚';
-  } else if(diff < 3600000) { // 1小时内
-    return `${Math.floor(diff / 60000)}分钟前`;
-  } else if(diff < 86400000) { // 24小时内
-    return `${Math.floor(diff / 3600000)}小时前`;
-  } else {
-    return date.toLocaleDateString();
   }
 };
 
@@ -935,21 +879,24 @@ const joinRoomWithNickname = async (nickname) => {
   }
 };
 
-// 建立SSE连接
-const connectSSE = () => {
+// 建立WebSocket连接
+const connectWebSocket = async () => {
   try {
-    SSEManager.connect(roomId.value, 
-      // 消息处理
-      (data) => {
-        handleSSEMessage(data);
-      },
-      // 错误处理
-      (error) => {
-        console.warn('SSE连接出现问题:', error);
-      }
-    );
+    // 连接WebSocket
+    await wsManager.connect();
+    
+    // 设置事件监听器
+    wsManager.on('roomJoined', handleWebSocketMessage);
+    wsManager.on('userJoined', handleWebSocketMessage);
+    wsManager.on('userLeft', handleWebSocketMessage);
+    wsManager.on('expenseAdded', handleWebSocketMessage);
+    wsManager.on('nicknameUpdated', handleWebSocketMessage);
+    wsManager.on('roomDataUpdated', handleWebSocketMessage);
+    
+    console.log('WebSocket连接已建立');
   } catch(error) {
-    console.warn('SSE连接失败，将使用轮询模式:', error);
+    console.warn('WebSocket连接失败:', error);
+    Toast.warning('实时连接失败，数据可能不会自动更新');
   }
 };
 
@@ -975,43 +922,58 @@ onMounted(async () => {
   } else {
     // 非第一次进入，直接加载数据
     await loadRoomData();
-    // 建立SSE连接
-    connectSSE();
+    // 建立WebSocket连接并加入房间
+    await connectWebSocket();
+    const roomUserData = RoomUserSession.getRoomUser(roomId.value);
+    if(roomUserData && roomUserData.nickname) {
+      wsManager.joinRoom(roomId.value, userSession.value.userId.hashCode(), roomUserData.nickname);
+    }
   }
 });
 
-// SSE连接断开
+// WebSocket连接断开
 onUnmounted(() => {
-  SSEManager.disconnect(roomId.value);
+  wsManager.leaveRoom(roomId.value);
+  wsManager.disconnect();
 });
 
-// 处理SSE消息
-const handleSSEMessage = (data) => {
-  switch(data.type) {
-    case'nickname_updated':
-      // 有用户更新了昵称，刷新数据
+// 处理WebSocket消息
+const handleWebSocketMessage = (data) => {
+  console.log('收到WebSocket消息:', data);
+  
+  // 根据事件类型处理 - 统一刷新数据
+  switch(data.type || data.event) {
+    case 'nicknameUpdated':
+    case 'nickname_updated':
       loadRoomData();
-      Toast.info(`${truncateName(data.data.oldNickname)} 改名为 ${truncateName(data.data.newNickname)}`);
+      // Toast.info('有用户更新了昵称');
       break;
-    case'user_joined':
-      // 有新用户加入
+    case 'userJoined':
+    case 'user_joined':
       loadRoomData();
-      Toast.info(`${truncateName(data.data.nickname)} 加入了房间`);
+      // Toast.info('有新用户加入房间');
       break;
-    case'expense_added':
-      // 有新的交易记录
+    case 'expenseAdded':
+    case 'expense_added':
+      loadRoomData();
+      // Toast.success('有新的支出记录');
+      break;
+    case 'userLeft':
+    case 'user_left':
+      loadRoomData();
+      // Toast.info('有用户离开房间');
+      break;
+    case 'roomDataUpdated':
+    case 'room_data_updated':
       loadRoomData();
       break;
-    case'user_left':
-      // 有用户离开
-      loadRoomData();
-      Toast.info(`${truncateName(data.data.nickname)} 离开了房间`);
-      break;
-    case'heartbeat':
-      // 心跳消息，保持连接
+    case 'roomJoined':
+    case 'room_joined':
+      // 成功加入房间
+      console.log('成功加入房间WebSocket');
       break;
     default:
-      console.log('收到未知SSE消息:', data);
+      console.log('收到未知WebSocket消息:', data);
   }
 };
 
@@ -1021,8 +983,9 @@ const handleDirectJoinConfirm = async (nickname) => {
   if(success) {
     directJoinDialogVisible.value = false;
     await loadRoomData();
-    // 建立SSE连接
-    connectSSE();
+    // 建立WebSocket连接并加入房间
+    await connectWebSocket();
+    wsManager.joinRoom(roomId.value, userSession.value.userId.hashCode(), nickname);
   } else {
     // 加入失败，关闭弹窗并返回主页
     directJoinDialogVisible.value = false;
@@ -1205,10 +1168,6 @@ if(!String.prototype.hashCode) {
   pointer-events: none;
 }
 
-
-
-
-
 .user-name {
   font-size: 0.75rem;
   color: #fff;
@@ -1230,11 +1189,11 @@ if(!String.prototype.hashCode) {
 }
 
 .user-balance.positive {
-  color: #ff6b6b; /* 赚钱为红色 */
+  color: #ff8a80; /* 赚钱为柔和的红色 */
 }
 
 .user-balance.negative {
-  color: #4ecdc4; /* 负债为绿色 */
+  color: #81c784; /* 负债为柔和的绿色 */
 }
 
 .add-user-card {
@@ -1331,6 +1290,41 @@ if(!String.prototype.hashCode) {
   -ms-overflow-style: none; /* IE */
 }
 
+.activity-list-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* 新增数据的滑入动画 */
+.activity-slide-enter-active {
+  transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.activity-slide-leave-active {
+  transition: all 0.4s ease-in;
+}
+
+.activity-slide-enter-from {
+  transform: translateX(-120%) scale(0.8);
+  opacity: 0;
+}
+
+.activity-slide-leave-to {
+  transform: translateX(120%) scale(0.8);
+  opacity: 0;
+}
+
+.activity-slide-move {
+  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* 为新项目添加轻微的弹跳效果 */
+.activity-slide-enter-to {
+  transform: translateX(0) scale(1);
+  opacity: 1;
+}
+
 .activity-list::-webkit-scrollbar {
   display: none; /* Chrome, Safari, Edge */
 }
@@ -1344,33 +1338,39 @@ if(!String.prototype.hashCode) {
   margin-bottom: 0.3rem;
 }
 
-.activity-item.transaction {
-  border-left-color: #4ecdc4;
-}
-
-.activity-item.status {
-  border-left-color: #ffd93d;
-}
-
-.activity-item.join-room {
+/* 用户加入房间样式 */
+.activity-item.user_joined {
   background: transparent;
   border: none;
-  border-left: none;
-  padding: 0.3rem 0;
-  min-height: auto;
+  padding: 0.2rem 0;
+  margin-bottom: 0.2rem;
   text-align: center;
 }
 
-.activity-item.related-to-me {
-  /* 移除特殊样式，保持与其他消息一致 */
+.user-joined {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.75rem;
+  text-align: center;
+  line-height: 1.2;
 }
 
-.activity-item:not(.related-to-me) {
-  /* 移除透明度差异，保持与其他消息一致 */
+/* 交易记录样式 */
+.activity-item.transaction {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 0.6rem;
+  border-left: 3px solid #81c784;
+  margin-bottom: 0.3rem;
+  opacity: 0.6;
 }
 
-.transaction-content,
-.status-content {
+.activity-item.transaction.related-to-me {
+  background: rgba(255, 255, 255, 0.1);
+  border-left-color: #ff8a80;
+  opacity: 1;
+}
+
+.transaction-content {
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
@@ -1384,26 +1384,8 @@ if(!String.prototype.hashCode) {
   font-size: 0.8rem;
 }
 
-.status-info {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  color: #fff;
-  font-size: 0.8rem;
-  text-align: center;
-}
-
-.join-room-text {
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 0.75rem;
-  text-align: center;
-  width: 100%;
-}
-
 .from-user,
-.to-user,
-.user-name {
+.to-user {
   font-weight: 600;
   max-width: 8em;
   overflow: hidden;
@@ -1412,8 +1394,7 @@ if(!String.prototype.hashCode) {
   display: inline-block;
 }
 
-.action,
-.status-text {
+.action {
   color: rgba(255, 255, 255, 0.7);
 }
 
@@ -1423,15 +1404,15 @@ if(!String.prototype.hashCode) {
 }
 
 .amount-pay {
-  color: #4ecdc4; /* 支付为绿色（负债） */
+  color: #81c784; /* 支付为柔和的绿色（负债） */
 }
 
 .amount-win {
-  color: #ff6b6b; /* 赢钱为红色（赚钱） */
+  color: #ff8a80; /* 赢钱为柔和的红色（赚钱） */
 }
 
 .amount-lose {
-  color: #4ecdc4; /* 输钱为绿色（负债） */
+  color: #81c784; /* 输钱为柔和的绿色（负债） */
 }
 
 .activity-time {
@@ -1514,10 +1495,6 @@ if(!String.prototype.hashCode) {
   font-size: 0.8rem;
   margin-bottom: 0.5rem;
 }
-
-
-
-
 
 .share-dialog-content {
   text-align: center;
@@ -1681,6 +1658,8 @@ if(!String.prototype.hashCode) {
       width: 18px;
       height: 18px;
       color: #1a1a1a !important;
+      stroke: #1a1a1a !important;
+      fill: #1a1a1a !important;
       stroke-width: 3;
     }
   }
@@ -1767,14 +1746,31 @@ if(!String.prototype.hashCode) {
     margin-bottom: 0.8rem;
   }
   
-  .activity-item {
+  .activity-item.transaction {
     padding: 0.5rem;
   }
   
-  .transaction-info,
-  .status-info {
+  .activity-item.user_joined {
+    padding: 0.15rem 0;
+    margin-bottom: 0.15rem;
+  }
+  
+  .transaction-info {
     font-size: 0.75rem;
     gap: 0.3rem;
+  }
+  
+  .user-joined {
+    font-size: 0.7rem;
+  }
+  
+  /* 移动端动画优化 */
+  .activity-slide-enter-active {
+    transition: all 0.4s ease-out;
+  }
+  
+  .activity-slide-enter-from {
+    transform: translateX(-100%) scale(0.9);
   }
 }
 

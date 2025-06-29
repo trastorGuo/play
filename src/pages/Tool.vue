@@ -45,7 +45,7 @@
                     <div class="action-area">
                         <el-button 
                             type="primary" 
-                            @click="processImage(item.type)"
+                            @click="debounceClick(() => processImage(item.type), 'processImage', 800)"
                             :disabled="!uploadedImage"
                             size="large"
                         >
@@ -57,11 +57,11 @@
                         <h4>处理结果：</h4>
                         <div v-if="item.type === 'gray'" class="result-image">
                             <img :src="processedResult" alt="处理后的图片" class="result-img" />
-                            <el-button type="success" @click="downloadResult">下载图片</el-button>
+                            <el-button type="success" @click="debounceClick(downloadResult, 'download')">下载图片</el-button>
                         </div>
                         <div v-else-if="item.type === 'char'" class="result-text">
                             <pre>{{ processedResult }}</pre>
-                            <el-button type="success" @click="copyResult">复制文本</el-button>
+                            <el-button type="success" @click="debounceClick(copyResult, 'copyText')">复制文本</el-button>
                         </div>
                         <div v-else-if="item.type === 'hex'" class="result-colors">
                             <div class="color-grid">
@@ -75,7 +75,7 @@
                                     {{ color }}
                                 </div>
                             </div>
-                            <el-button type="success" @click="copyColors">复制颜色值</el-button>
+                            <el-button type="success" @click="debounceClick(copyColors, 'copyColors')">复制颜色值</el-button>
                         </div>
                     </div>
                 </div>
@@ -89,6 +89,7 @@ import { ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { UploadFilled } from '@element-plus/icons-vue';
 import PageNavigation from '@/components/PageNavigation.vue';
+import { debounceClick } from '@/utils/debounce.js';
 
 const tabActive = ref('0');
 const uploadedImage = ref('');

@@ -11,6 +11,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Room } from '../entity/bookkeeping/room';
 import { RoomUser } from '../entity/bookkeeping/roomUser.entity';
 import { ExpenseRecord } from '../entity/bookkeeping/expenseRecord.entity';
+import { RedisService } from '../service/redis.service';
 
 @Module({
     imports: [
@@ -27,6 +28,8 @@ import { ExpenseRecord } from '../entity/bookkeeping/expenseRecord.entity';
             autoLoadEntities: true,
             synchronize: true
         })
-    ]
+    ],
+    providers: [RedisService],
+    exports: [RedisService]
 })
 export class AppModule {}

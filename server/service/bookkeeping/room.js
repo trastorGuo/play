@@ -20,6 +20,8 @@ const room_1 = require("../../entity/bookkeeping/room");
 const roomUser_entity_1 = require("../../entity/bookkeeping/roomUser.entity");
 const expenseRecord_entity_1 = require("../../entity/bookkeeping/expenseRecord.entity");
 const events_1 = require("events");
+const redis_service_1 = require("../redis.service");
+const room_gateway_1 = require("../../gateway/room.gateway");
 class SSEManager extends events_1.EventEmitter {
     constructor() {
         super(...arguments);
@@ -65,7 +67,7 @@ class SSEManager extends events_1.EventEmitter {
 }
 const sseManager = new SSEManager();
 let RoomService = class RoomService {
-    constructor(roomRepository, roomUserRepository, expenseRecordRepository) {
+    constructor(roomRepository, roomUserRepository, expenseRecordRepository, redisService, roomGateway) {
         Object.defineProperty(this, "roomRepository", {
             enumerable: true,
             configurable: true,
@@ -83,6 +85,18 @@ let RoomService = class RoomService {
             configurable: true,
             writable: true,
             value: expenseRecordRepository
+        });
+        Object.defineProperty(this, "redisService", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: redisService
+        });
+        Object.defineProperty(this, "roomGateway", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: roomGateway
         });
     }
     async generateRoomCode() {
@@ -134,20 +148,72 @@ let RoomService = class RoomService {
         const savedRoom = await this.roomRepository.save(room);
         await this.joinRoom(savedRoom.id, {
             userId: data.ownerId,
-            nickname: data.ownerName,
-            isOwner: true
+            nickname: data.ownerName
+        });
+        await this.roomGateway.broadcastToRoom(savedRoom.roomCode, 'roomCreated', {
+            type: 'roomCreated',
+            message: '房间已创建'
         });
         return savedRoom;
     }
     async getRoomInfo(roomCode) {
         const room = await this.roomRepository.findOne({
             where: { roomCode, status: 1 },
-            relations: ['roomUsers', 'expenseRecords']
+            relations: ['roomUsers']
         });
         if (!room) {
             throw new Error('房间不存在或已关闭');
         }
-        return room;
+        const activities = await this.generateActivities(room.id);
+        const roomData = {
+            id: room.id,
+            roomCode: room.roomCode,
+            name: room.name,
+            ownerId: room.ownerId,
+            ownerName: room.ownerName,
+            status: room.status,
+            currentUsers: room.currentUsers,
+            maxUsers: room.maxUsers,
+            createdAt: room.createdAt,
+            updatedAt: room.updatedAt,
+            roomUsers: room.roomUsers,
+            activities
+        };
+        return roomData;
+    }
+    async generateActivities(roomId) {
+        const expenseRecords = await this.expenseRecordRepository.find({
+            where: { roomId },
+            order: { createdAt: 'DESC' }
+        });
+        const userJoinRecords = await this.roomUserRepository.find({
+            where: { roomId, status: 1 },
+            order: { createdAt: 'ASC' }
+        });
+        const activities = [];
+        expenseRecords.forEach(record => {
+            activities.push({
+                id: `transaction_${record.id}`,
+                type: 'transaction',
+                fromUserName: record.fromUserName,
+                toUserName: record.toUserName,
+                amount: record.amount,
+                transactionType: record.type,
+                createdAt: record.createdAt,
+                data: record
+            });
+        });
+        userJoinRecords.forEach(user => {
+            activities.push({
+                id: `user_joined_${user.id}`,
+                type: 'user_joined',
+                userName: user.nickname,
+                message: '加入了房间',
+                createdAt: user.createdAt,
+                data: user
+            });
+        });
+        return activities.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
     async joinRoom(roomId, userData) {
         const duplicateNickname = await this.roomUserRepository
@@ -169,8 +235,7 @@ let RoomService = class RoomService {
         const roomUser = this.roomUserRepository.create({
             roomId,
             userId: userData.userId,
-            nickname: userData.nickname,
-            isOwner: userData.isOwner ? 1 : 0
+            nickname: userData.nickname
         });
         const savedUser = await this.roomUserRepository.save(roomUser);
         await this.roomRepository.increment({ id: roomId }, 'currentUsers', 1);
@@ -179,7 +244,7 @@ let RoomService = class RoomService {
     async getRoomUsers(roomId) {
         return this.roomUserRepository.find({
             where: { roomId, status: 1 },
-            order: { isOwner: 'DESC', createdAt: 'ASC' }
+            order: { createdAt: 'ASC' }
         });
     }
     async updateUserNickname(roomId, userId, nickname) {
@@ -203,20 +268,14 @@ let RoomService = class RoomService {
         roomUser.nickname = nickname;
         const updatedUser = await this.roomUserRepository.save(roomUser);
         await this.updateExpenseRecordNicknames(roomId, userId, oldNickname, nickname);
-        if (roomUser.isOwner === 1) {
+        const roomInfo = await this.roomRepository.findOne({ where: { id: roomId } });
+        if (roomInfo && roomInfo.ownerId === userId) {
             await this.roomRepository.update({ id: roomId }, { ownerName: nickname });
         }
-        const room = await this.roomRepository.findOne({ where: { id: roomId } });
-        if (room) {
-            sseManager.broadcast(room.roomCode, {
-                type: 'nickname_updated',
-                data: {
-                    userId,
-                    oldNickname,
-                    newNickname: nickname,
-                    isOwner: roomUser.isOwner === 1,
-                    updatedAt: new Date().toISOString()
-                }
+        if (roomInfo) {
+            await this.roomGateway.broadcastToRoom(roomInfo.roomCode, 'nicknameUpdated', {
+                type: 'nicknameUpdated',
+                message: '有用户更新了昵称'
             });
         }
         return updatedUser;
@@ -281,6 +340,13 @@ let RoomService = class RoomService {
             await this.roomUserRepository.decrement({ roomId, userId: data.fromUserId }, 'balance', data.amount);
             await this.roomUserRepository.increment({ roomId, userId: data.toUserId }, 'balance', data.amount);
         }
+        const room = await this.roomRepository.findOne({ where: { id: roomId } });
+        if (room) {
+            await this.roomGateway.broadcastToRoom(room.roomCode, 'expenseAdded', {
+                type: 'expenseAdded',
+                message: '有新的支出记录'
+            });
+        }
         return savedRecord;
     }
     async getRoomRecords(roomId) {
@@ -289,49 +355,20 @@ let RoomService = class RoomService {
             order: { createdAt: 'DESC' }
         });
     }
-    async getRoomActivities(roomId) {
-        const expenseRecords = await this.expenseRecordRepository.find({
-            where: { roomId },
-            order: { createdAt: 'DESC' }
-        });
-        const userJoinRecords = await this.roomUserRepository.find({
-            where: { roomId, status: 1 },
-            order: { createdAt: 'ASC' }
-        });
-        const activities = [];
-        expenseRecords.forEach(record => {
-            activities.push({
-                id: `transaction_${record.id}`,
-                type: 'transaction',
-                fromUserName: record.fromUserName,
-                toUserName: record.toUserName,
-                amount: record.amount,
-                transactionType: record.type,
-                createdAt: record.createdAt,
-                data: record
-            });
-        });
-        userJoinRecords.forEach(user => {
-            activities.push({
-                id: `user_joined_${user.id}`,
-                type: 'user_joined',
-                userName: user.nickname,
-                message: '加入了房间',
-                createdAt: user.createdAt,
-                data: user
-            });
-        });
-        return activities.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    }
     async addUserToRoom(roomCode, userData) {
         const room = await this.getRoomInfo(roomCode);
         if (room.currentUsers >= room.maxUsers) {
             throw new Error('房间人数已满');
         }
-        return this.joinRoom(room.id, {
+        const roomUser = await this.joinRoom(room.id, {
             userId: userData.userId,
             nickname: userData.nickname
         });
+        await this.roomGateway.broadcastToRoom(roomCode, 'userJoined', {
+            type: 'userJoined',
+            message: '有新用户加入房间'
+        });
+        return roomUser;
     }
     async leaveRoom(roomId, userId) {
         const roomUser = await this.roomUserRepository.findOne({
@@ -351,7 +388,9 @@ RoomService = __decorate([
     __param(2, (0, typeorm_1.InjectRepository)(expenseRecord_entity_1.ExpenseRecord)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
-        typeorm_2.Repository])
+        typeorm_2.Repository,
+        redis_service_1.RedisService,
+        room_gateway_1.RoomGateway])
 ], RoomService);
 exports.RoomService = RoomService;
 //# sourceMappingURL=room.js.map

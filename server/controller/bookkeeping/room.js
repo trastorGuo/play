@@ -102,22 +102,6 @@ let RoomController = class RoomController {
             };
         }
     }
-    async getRoomActivities(roomCode) {
-        try {
-            const room = await this.roomService.getRoomInfo(roomCode);
-            const activities = await this.roomService.getRoomActivities(room.id);
-            return {
-                result: 1,
-                data: activities
-            };
-        }
-        catch (error) {
-            return {
-                result: 0,
-                error_msg: error.message || '获取房间活动失败'
-            };
-        }
-    }
     async updateUserNickname(body) {
         try {
             const room = await this.roomService.getRoomInfo(body.roomCode);
@@ -225,13 +209,6 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], RoomController.prototype, "joinRoom", null);
-__decorate([
-    (0, common_1.Get)('activities/:roomCode'),
-    __param(0, (0, common_1.Param)('roomCode')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", Promise)
-], RoomController.prototype, "getRoomActivities", null);
 __decorate([
     (0, common_1.Post)('updateNickname'),
     __param(0, (0, common_1.Body)()),

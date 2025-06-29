@@ -20,7 +20,7 @@ export declare class RoomController {
     }>;
     getRoomInfo(roomCode: string): Promise<{
         result: number;
-        data: import("../../entity/bookkeeping/room").Room;
+        data: any;
         error_msg?: undefined;
     } | {
         result: number;
@@ -50,15 +50,6 @@ export declare class RoomController {
         error_msg: any;
         data?: undefined;
         message?: undefined;
-    }>;
-    getRoomActivities(roomCode: string): Promise<{
-        result: number;
-        data: any[];
-        error_msg?: undefined;
-    } | {
-        result: number;
-        error_msg: any;
-        data?: undefined;
     }>;
     updateUserNickname(body: {
         roomCode: string;

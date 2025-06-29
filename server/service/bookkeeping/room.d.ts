@@ -2,22 +2,26 @@ import { Repository } from 'typeorm';
 import { Room } from '../../entity/bookkeeping/room';
 import { RoomUser } from '../../entity/bookkeeping/roomUser.entity';
 import { ExpenseRecord } from '../../entity/bookkeeping/expenseRecord.entity';
+import { RedisService } from '../redis.service';
+import { RoomGateway } from '../../gateway/room.gateway';
 export declare class RoomService {
     private roomRepository;
     private roomUserRepository;
     private expenseRecordRepository;
-    constructor(roomRepository: Repository<Room>, roomUserRepository: Repository<RoomUser>, expenseRecordRepository: Repository<ExpenseRecord>);
+    private redisService;
+    private roomGateway;
+    constructor(roomRepository: Repository<Room>, roomUserRepository: Repository<RoomUser>, expenseRecordRepository: Repository<ExpenseRecord>, redisService: RedisService, roomGateway: RoomGateway);
     private generateRoomCode;
     createRoom(data: {
         name: string;
         ownerId: number;
         ownerName: string;
     }): Promise<Room>;
-    getRoomInfo(roomCode: string): Promise<Room>;
+    getRoomInfo(roomCode: string): Promise<any>;
+    private generateActivities;
     joinRoom(roomId: number, userData: {
         userId: number;
         nickname: string;
-        isOwner?: boolean;
     }): Promise<RoomUser>;
     getRoomUsers(roomId: number): Promise<RoomUser[]>;
     updateUserNickname(roomId: number, userId: number, nickname: string): Promise<RoomUser>;
@@ -35,7 +39,6 @@ export declare class RoomService {
         operatorName: string;
     }): Promise<ExpenseRecord>;
     getRoomRecords(roomId: number): Promise<ExpenseRecord[]>;
-    getRoomActivities(roomId: number): Promise<any[]>;
     addUserToRoom(roomCode: string, userData: {
         userId: number;
         nickname: string;

@@ -12,9 +12,32 @@ export interface Response {
     url?: string
 }
 
-// TODO 考虑正式环境地址
-// 开发环境使用代理，不需要指定完整的URL
-const BASE_URL = process.env.NODE_ENV === 'production' ? "http://localhost:6015" : "";
+// 动态获取 API 基础地址
+function getBaseURL(): string {
+    // 开发环境使用代理，不需要指定完整的URL
+    if (process.env.NODE_ENV === 'development') {
+        return '';
+    }
+    
+    // 生产环境根据当前域名自动判断
+    if (typeof window !== 'undefined') {
+        const hostname = window.location.hostname;
+        const protocol = window.location.protocol;
+        
+        // 如果是本地访问（localhost 或 127.0.0.1）
+        if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.')) {
+            return 'http://localhost:6015';
+        }
+        
+        // 如果是服务器域名访问
+        return `${protocol}//${hostname}`;
+    }
+    
+    // 默认情况（SSR 或其他环境）
+    return '';
+}
+
+const BASE_URL = getBaseURL();
 
 const instance = axios.create({
     timeout: 10 * 1000,

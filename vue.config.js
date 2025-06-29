@@ -22,12 +22,19 @@ module.exports = defineConfig({
     },
     devServer: {
         allowedHosts: ['localhost'],
-        port: 8083,
+        port: 8080,
         proxy: {
             '/api': {
                 target: 'http://localhost:6015',
                 changeOrigin: true,
                 secure: false,
+                logLevel: 'debug'
+            },
+            '/socket.io': {
+                target: 'http://localhost:6015',
+                changeOrigin: true,
+                secure: false,
+                ws: true,
                 logLevel: 'debug'
             }
         },

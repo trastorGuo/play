@@ -3,7 +3,11 @@
     <div class="nav-content">
       <!-- 左侧返回按钮 -->
       <div class="nav-left">
-        <button class="back-btn" @click="goBack">
+        <button 
+          v-if="showBackButton" 
+          class="back-btn" 
+          @click="goBack"
+        >
           <svg class="back-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M19 12H5M12 19L5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
@@ -26,9 +30,12 @@
 </template>
 
 <script setup>
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 
-const props = defineProps({
+const router = useRouter();
+
+defineProps({
   title: {
     type: String,
     required: true
@@ -47,17 +54,59 @@ const props = defineProps({
   }
 });
 
-const router = useRouter();
+// 检查是否可以返回
+const canGoBack = ref(false);
+
+// 计算是否显示返回按钮
+const showBackButton = computed(() => {
+  return canGoBack.value;
+});
+
+// 检查历史记录
+const checkCanGoBack = () => {
+  // 检查浏览器历史记录长度
+  // window.history.length 表示当前会话中的历史记录数量
+  // 如果长度大于1，说明有历史记录可以返回
+  const historyLength = window.history.length;
+  
+  // 另一种方法：尝试检查当前页面是否是通过前进/后退按钮到达的
+  // 或者是否是页面刷新/直接访问
+  const isFirstPage = historyLength <= 1;
+  
+  canGoBack.value = !isFirstPage;
+};
 
 const goBack = () => {
-  if(props.forceBackPath) {
-    router.push(props.backPath);
-  } else if(window.history.length > 1) {
-    router.go(-1);
-  } else {
-    router.push(props.backPath);
+  // 只有确认可以返回时才执行返回操作
+  if (canGoBack.value) {
+    window.history.back();
   }
 };
+
+// 监听路由变化的清理函数
+let unwatch;
+
+onMounted(() => {
+  checkCanGoBack();
+  
+  // 监听路由变化
+  unwatch = router.afterEach(() => {
+    // 延迟执行，确保路由跳转完成后再检查
+    nextTick(() => {
+      checkCanGoBack();
+    });
+  });
+  
+  // 监听浏览器前进/后退事件
+  window.addEventListener('popstate', checkCanGoBack);
+});
+
+onUnmounted(() => {
+  if (unwatch) {
+    unwatch();
+  }
+  window.removeEventListener('popstate', checkCanGoBack);
+});
 </script>
 
 <style lang="scss" scoped>

@@ -23,8 +23,7 @@ export class RoomUser {
   @Column({ type: 'int', default: 1, comment: '状态：1-在房间，0-已离开' })
   status: number;
 
-  @Column({ type: 'int', default: 0, comment: '是否是房主：1-是，0-否' })
-  isOwner: number;
+
 
   @CreateDateColumn({ comment: '加入时间' })
   createdAt: Date;

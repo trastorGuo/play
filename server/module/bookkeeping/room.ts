@@ -11,10 +11,12 @@ import { RoomUser } from '../../entity/bookkeeping/roomUser.entity';
 import { ExpenseRecord } from '../../entity/bookkeeping/expenseRecord.entity';
 import { RoomController } from '../../controller/bookkeeping/room';
 import { RoomService } from '../../service/bookkeeping/room';
+import { RedisService } from '../../service/redis.service';
+import { RoomGateway } from '../../gateway/room.gateway';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Room, RoomUser, ExpenseRecord])],
   controllers: [RoomController],
-  providers: [RoomService]
+  providers: [RoomService, RedisService, RoomGateway]
 })
 export class RoomModule {}

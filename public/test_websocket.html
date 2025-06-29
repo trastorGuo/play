@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket 连接测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 10px 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .connected { background-color: rgba(76, 175, 80, 0.3); }
+        .disconnected { background-color: rgba(244, 67, 54, 0.3); }
+        .connecting { background-color: rgba(255, 193, 7, 0.3); }
+        
+        input, button, select {
+            margin: 5px;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+        }
+        button {
+            background: rgba(76, 175, 80, 0.8);
+            color: white;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: rgba(76, 175, 80, 1);
+        }
+        button:disabled {
+            background: rgba(158, 158, 158, 0.5);
+            cursor: not-allowed;
+        }
+        
+        .log {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 5px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            margin: 10px 0;
+        }
+        
+        .form-group {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .form-group label {
+            min-width: 80px;
+            font-weight: bold;
+        }
+        .form-group input, .form-group select {
+            flex: 1;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>WebSocket 连接测试页面</h1>
+    
+    <div class="container">
+        <h2>连接状态</h2>
+        <div id="status" class="status disconnected">未连接</div>
+        <div class="form-group">
+            <label>服务器地址:</label>
+            <input type="text" id="serverUrl" value="" placeholder="WebSocket服务器地址（留空使用当前域名）">
+            <button id="connectBtn" onclick="connectWebSocket()">连接</button>
+            <button id="disconnectBtn" onclick="disconnectWebSocket()" disabled>断开</button>
+        </div>
+    </div>
+
+    <div class="grid">
+        <div class="container">
+            <h2>房间操作</h2>
+            <div class="form-group">
+                <label>房间号:</label>
+                <input type="text" id="roomCode" value="939605" placeholder="房间号">
+            </div>
+            <div class="form-group">
+                <label>用户ID:</label>
+                <input type="text" id="userId" value="111" placeholder="用户ID">
+            </div>
+            <div class="form-group">
+                <label>昵称:</label>
+                <input type="text" id="nickname" value="测试用户" placeholder="昵称">
+            </div>
+            <div class="form-group">
+                <button id="joinRoomBtn" onclick="joinRoom()" disabled>加入房间</button>
+                <button id="leaveRoomBtn" onclick="leaveRoom()" disabled>离开房间</button>
+            </div>
+        </div>
+
+        <div class="container">
+            <h2>支付测试</h2>
+            <div class="form-group">
+                <label>付款人ID:</label>
+                <input type="text" id="fromUserId" value="111" placeholder="付款人用户ID">
+            </div>
+            <div class="form-group">
+                <label>收款人ID:</label>
+                <input type="text" id="toUserId" value="222" placeholder="收款人用户ID">
+            </div>
+            <div class="form-group">
+                <label>金额:</label>
+                <input type="number" id="amount" value="50" placeholder="金额" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>备注:</label>
+                <input type="text" id="note" value="测试支付" placeholder="备注">
+            </div>
+            <div class="form-group">
+                <button id="addExpenseBtn" onclick="addExpense()" disabled>添加支付记录</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>消息日志</h2>
+        <button onclick="clearLog()">清空日志</button>
+        <div id="log" class="log"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        let socket = null;
+        let isConnected = false;
+        let currentRoom = null;
+
+        // 日志记录
+        function log(message, type = 'info') {
+            const logElement = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const logLine = `[${timestamp}] ${type.toUpperCase()}: ${message}\n`;
+            logElement.textContent += logLine;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(logLine);
+        }
+
+        // 更新连接状态
+        function updateStatus(status, className) {
+            const statusElement = document.getElementById('status');
+            statusElement.textContent = status;
+            statusElement.className = `status ${className}`;
+        }
+
+        // 更新按钮状态
+        function updateButtons() {
+            document.getElementById('connectBtn').disabled = isConnected;
+            document.getElementById('disconnectBtn').disabled = !isConnected;
+            document.getElementById('joinRoomBtn').disabled = !isConnected;
+            document.getElementById('leaveRoomBtn').disabled = !isConnected || !currentRoom;
+            document.getElementById('addExpenseBtn').disabled = !isConnected || !currentRoom;
+        }
+
+        // 连接WebSocket
+        function connectWebSocket() {
+            const serverUrl = document.getElementById('serverUrl').value || window.location.origin;
+            
+            if (socket) {
+                socket.disconnect();
+            }
+
+            log(`尝试连接到: ${serverUrl}`);
+            updateStatus('连接中...', 'connecting');
+
+            try {
+                socket = io(serverUrl, {
+                    transports: ['websocket', 'polling'],
+                    timeout: 10000,
+                    forceNew: true
+                });
+
+                // 连接成功
+                socket.on('connect', () => {
+                    isConnected = true;
+                    log(`WebSocket连接成功，Socket ID: ${socket.id}`);
+                    updateStatus('已连接', 'connected');
+                    updateButtons();
+                });
+
+                // 连接失败
+                socket.on('connect_error', (error) => {
+                    log(`连接失败: ${error.message}`, 'error');
+                    updateStatus('连接失败', 'disconnected');
+                    isConnected = false;
+                    updateButtons();
+                });
+
+                // 断开连接
+                socket.on('disconnect', (reason) => {
+                    isConnected = false;
+                    currentRoom = null;
+                    log(`连接断开: ${reason}`, 'warn');
+                    updateStatus('已断开', 'disconnected');
+                    updateButtons();
+                });
+
+                // 加入房间成功
+                socket.on('roomJoined', (data) => {
+                    currentRoom = data.roomCode;
+                    log(`成功加入房间: ${JSON.stringify(data)}`);
+                    updateButtons();
+                });
+
+                // 用户加入房间
+                socket.on('userJoined', (data) => {
+                    log(`用户加入房间: ${JSON.stringify(data)}`);
+                });
+
+                // 用户离开房间
+                socket.on('userLeft', (data) => {
+                    log(`用户离开房间: ${JSON.stringify(data)}`);
+                });
+
+                // 支出记录添加
+                socket.on('expenseAdded', (data) => {
+                    log(`收到支出记录通知: ${JSON.stringify(data)}`);
+                });
+
+                // 昵称更新
+                socket.on('nicknameUpdated', (data) => {
+                    log(`收到昵称更新通知: ${JSON.stringify(data)}`);
+                });
+
+                // 房间数据更新
+                socket.on('roomDataUpdated', (data) => {
+                    log(`收到房间数据更新通知: ${JSON.stringify(data)}`);
+                });
+
+                // 错误处理
+                socket.on('error', (data) => {
+                    log(`WebSocket错误: ${JSON.stringify(data)}`, 'error');
+                });
+
+                // 通用消息处理
+                socket.onAny((event, ...args) => {
+                    if (!['connect', 'disconnect', 'connect_error'].includes(event)) {
+                        log(`收到事件 ${event}: ${JSON.stringify(args)}`);
+                    }
+                });
+
+            } catch (error) {
+                log(`创建连接失败: ${error.message}`, 'error');
+                updateStatus('连接失败', 'disconnected');
+                updateButtons();
+            }
+        }
+
+        // 断开WebSocket
+        function disconnectWebSocket() {
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+            }
+            isConnected = false;
+            currentRoom = null;
+            updateStatus('已断开', 'disconnected');
+            updateButtons();
+            log('主动断开连接');
+        }
+
+        // 加入房间
+        function joinRoom() {
+            if (!socket || !isConnected) {
+                log('WebSocket未连接', 'error');
+                return;
+            }
+
+            const roomCode = document.getElementById('roomCode').value;
+            const userId = document.getElementById('userId').value;
+            const nickname = document.getElementById('nickname').value;
+
+            if (!roomCode || !userId || !nickname) {
+                log('请填写完整的房间信息', 'error');
+                return;
+            }
+
+            const data = {
+                roomCode,
+                userId,
+                nickname
+            };
+
+            log(`尝试加入房间: ${JSON.stringify(data)}`);
+            socket.emit('joinRoom', data);
+        }
+
+        // 离开房间
+        function leaveRoom() {
+            if (!socket || !isConnected || !currentRoom) {
+                log('无法离开房间：未连接或未加入房间', 'error');
+                return;
+            }
+
+            const data = {
+                roomCode: currentRoom
+            };
+
+            log(`尝试离开房间: ${JSON.stringify(data)}`);
+            socket.emit('leaveRoom', data);
+            currentRoom = null;
+            updateButtons();
+        }
+
+        // 添加支付记录
+        async function addExpense() {
+            if (!currentRoom) {
+                log('请先加入房间', 'error');
+                return;
+            }
+
+            const fromUserId = document.getElementById('fromUserId').value;
+            const toUserId = document.getElementById('toUserId').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+            const note = document.getElementById('note').value;
+
+            if (!fromUserId || !toUserId || !amount) {
+                log('请填写完整的支付信息', 'error');
+                return;
+            }
+
+            const data = {
+                roomCode: currentRoom,
+                fromUserId: parseInt(fromUserId),
+                toUserId: parseInt(toUserId),
+                amount: amount,
+                operatorId: parseInt(document.getElementById('userId').value)
+            };
+
+            if (note) {
+                data.note = note;
+            }
+
+            log(`尝试添加支付记录: ${JSON.stringify(data)}`);
+
+            try {
+                const response = await fetch(`/api/room/addExpense`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                log(`支付记录API响应: ${JSON.stringify(result)}`);
+
+                if (result.result === 1) {
+                    log('支付记录添加成功！');
+                } else {
+                    log(`支付记录添加失败: ${result.error_msg || '未知错误'}`, 'error');
+                }
+            } catch (error) {
+                log(`支付记录API调用失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 清空日志
+        function clearLog() {
+            document.getElementById('log').textContent = '';
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            log('WebSocket测试页面已加载');
+            updateButtons();
+        });
+    </script>
+</body>
+</html> 

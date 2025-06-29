@@ -1,5 +1,3 @@
-import multiavatar from '@multiavatar/multiavatar';
-
 // 生成唯一用户ID
 export const generateUserId = () => {
   // 基于时间戳 + 随机数 + 浏览器指纹
@@ -187,54 +185,12 @@ export const RoomUserSession = {
   }
 };
 
-// SSE连接管理
+// WebSocket连接管理 (已移至 websocket.js)
 export const SSEManager = {
-  connections: new Map(),
-
-  // 创建SSE连接
-  connect(roomId, onMessage, onError) {
-    const url = `/api/room/${roomId}/events`;
-    const eventSource = new EventSource(url);
-    
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        onMessage(data);
-      } catch(error) {
-        console.error('解析SSE消息失败:', error);
-      }
-    };
-
-    eventSource.onerror = (error) => {
-      console.error('SSE连接错误:', error);
-      if(onError) onError(error);
-      
-      // 自动重连
-      setTimeout(() => {
-        if(eventSource.readyState === EventSource.CLOSED) {
-          this.connect(roomId, onMessage, onError);
-        }
-      }, 3000);
-    };
-
-    this.connections.set(roomId, eventSource);
-    return eventSource;
+  // 保持向后兼容性的空实现
+  connect() {
+    console.warn('SSEManager已弃用，请使用WebSocket');
   },
-
-  // 断开SSE连接
-  disconnect(roomId) {
-    const connection = this.connections.get(roomId);
-    if(connection) {
-      connection.close();
-      this.connections.delete(roomId);
-    }
-  },
-
-  // 断开所有连接
-  disconnectAll() {
-    this.connections.forEach((connection) => {
-      connection.close();
-    });
-    this.connections.clear();
-  }
+  disconnect() {},
+  disconnectAll() {}
 };

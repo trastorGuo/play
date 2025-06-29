@@ -6,7 +6,7 @@
     back-path="/"
   >
     <template #right>
-      <button class="help-btn" @click="showHelpDialog">
+      <button class="help-btn" @click="debounceClick(showHelpDialog, 'showHelp')">
         <span class="help-icon">?</span>
       </button>
     </template>
@@ -25,7 +25,7 @@
       
       <!-- 功能卡片区域 -->
       <div class="action-cards">
-        <div class="action-card create-card" @click="showCreateRoomDialog" :class="{ disabled: creating }">
+        <div class="action-card create-card" @click="debounceClick(showCreateRoomDialog, 'createRoom')" :class="{ disabled: creating }">
           <div class="card-icon">
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 4V20M4 12H20" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
@@ -37,10 +37,11 @@
           </div>
         </div>
         
-        <div class="action-card join-card" @click="showJoinDialog" :class="{ disabled: joining }">
+        <div class="action-card join-card" @click="debounceClick(showJoinDialog, 'joinRoom')" :class="{ disabled: joining }">
           <div class="card-icon">
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M15 3H19C20.1046 3 21 3.89543 21 5V19C21 20.1046 20.1046 21 19 21H15M10 17L15 12L10 7M15 12H3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M15 3H19C20.1046 3 21 3.89543 21 5V19C21 20.1046 20.1046 21 19 21H15M10 17L15 12L10 7M15 12H3" 
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </div>
           <div class="card-content">
@@ -86,7 +87,7 @@
           <span class="dialog-title">进入房间</span>
           <button class="dialog-close-btn" @click="joinDialogVisible = false">
             <svg class="close-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M18 6L6 18M6 6L18 18" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
         </div>
@@ -109,7 +110,7 @@
         <div class="dialog-footer">
           <el-button 
             type="primary" 
-            @click="checkRoomAndJoin" 
+            @click="debounceClick(checkRoomAndJoin, 'checkJoin', 800)" 
             size="large"
             :loading="joining"
             :disabled="!roomIdInput.trim()"
@@ -149,7 +150,7 @@
           <span class="dialog-title">使用说明</span>
           <button class="dialog-close-btn" @click="helpDialogVisible = false">
             <svg class="close-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M18 6L6 18M6 6L18 18" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
         </div>
@@ -206,7 +207,7 @@
       
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" @click="helpDialogVisible = false" size="large" class="confirm-btn">
+          <el-button type="primary" @click="debounceClick(() => helpDialogVisible = false, 'closeHelp')" size="large" class="confirm-btn">
             我知道了
           </el-button>
         </div>
@@ -216,12 +217,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElDialog, ElInput, ElButton } from 'element-plus';
 import Toast from '@/utils/toast.js';
+import { debounceClick } from '@/utils/debounce.js';
 import PageNavigation from '@/components/PageNavigation.vue';
-import UserAvatar from '@/components/UserAvatar.vue';
 import NicknameDialog from '@/components/NicknameDialog.vue';
 import { createRoom as apiCreateRoom, getRoomInfo as apiGetRoomInfo, joinRoom as apiJoinRoom } from '@/api/room';
 import { generateAvatar, getUserSession, validateNickname, RoomUserSession } from '@/utils/userUtils';
@@ -248,15 +249,6 @@ const targetRoomInfo = ref(null);
 // 头像现在由组件自动生成，不需要预览变量
 
 // 计算属性
-const isValidNickname = computed(() => {
-  const validation = validateNickname(ownerNickname.value);
-  return validation.valid;
-});
-
-const isValidJoinNickname = computed(() => {
-  const validation = validateNickname(joinNickname.value);
-  return validation.valid;
-});
 
 // 生命周期
 onMounted(() => {
@@ -318,12 +310,11 @@ const createRoom = async () => {
       
       // 保存到用户会话管理
       RoomUserSession.saveRoomUser(roomCode, {
-        nickname: nickname,
-        avatar: avatar,
-        isOwner: true
-      });
+                nickname: nickname,
+        avatar: avatar
+        });
       
-      router.push(`/room/${roomCode}?isOwner=true`);
+              router.push(`/room/${roomCode}`);
     } else {
       const errorMsg = response.data?.error_msg || response.error_msg || '创建房间失败';
       Toast.error(errorMsg);
@@ -445,10 +436,9 @@ const joinRoom = async () => {
       
       // 保存到用户会话管理
       RoomUserSession.saveRoomUser(roomCode, {
-        nickname: nickname,
-        avatar: avatar,
-        isOwner: false
-      });
+                nickname: nickname,
+        avatar: avatar
+        });
       
       router.push(`/room/${roomCode}`);
     } else {
@@ -881,6 +871,8 @@ String.prototype.hashCode = function() {
       width: 18px;
       height: 18px;
       color: #1a1a1a !important;
+      stroke: #1a1a1a !important;
+      fill: #1a1a1a !important;
       stroke-width: 3;
     }
   }

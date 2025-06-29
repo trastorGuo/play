@@ -6,7 +6,6 @@ export declare class RoomUser {
     nickname: string;
     balance: number;
     status: number;
-    isOwner: number;
     createdAt: Date;
     updatedAt: Date;
     room: Room;

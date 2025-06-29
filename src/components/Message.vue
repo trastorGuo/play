@@ -12,9 +12,6 @@
 </template>
 
 <script setup>
-import { mainStore } from "@/store";
-const store = mainStore();
-
 // 站点链接
 const siteUrl = computed(() => {
   const url = process.env.VUE_APP_SITE_URL;
