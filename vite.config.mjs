@@ -4,12 +4,20 @@ import { resolve } from 'path'
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { VantResolver, ElementPlusResolver } from 'unplugin-vue-components/resolvers'
-import { chunkStratagem } from 'vite-plugin-chunk-stratagem';
+import { chunkStratagem } from 'vite-plugin-chunk-stratagem'
+import { createHash } from 'crypto'
+
+// Node.js v23 兼容性修复
+if (!global.crypto) {
+  global.crypto = {
+    hash: createHash
+  }
+}
 
 
 export default defineConfig({
   define: {
-    // 为了兼容旧的 process.env 代码，将 process.env 映射到 import.meta.env
+    // 同时支持 process.env 和 import.meta.env
     'process.env.VUE_APP_SITE_NAME': JSON.stringify('trastor'),
     'process.env.VUE_APP_SITE_URL': JSON.stringify('https://www.trastor.com'),
     'process.env.VUE_APP_SITE_AUTHOR': JSON.stringify('trastor'),
@@ -18,10 +26,24 @@ export default defineConfig({
     'process.env.VUE_APP_SONG_TYPE': JSON.stringify('playlist'),
     'process.env.VUE_APP_SONG_ID': JSON.stringify('8407304077'),
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
+    // import.meta.env 变量
+    'import.meta.env.VITE_APP_SITE_NAME': JSON.stringify('trastor'),
+    'import.meta.env.VITE_APP_SITE_URL': JSON.stringify('https://www.trastor.com'),
+    'import.meta.env.VITE_APP_SITE_AUTHOR': JSON.stringify('trastor'),
+    'import.meta.env.VITE_APP_SITE_START': JSON.stringify('2025-01-01'),
+    'import.meta.env.VITE_APP_SONG_SERVER': JSON.stringify('netease'),
+    'import.meta.env.VITE_APP_SONG_TYPE': JSON.stringify('playlist'),
+    'import.meta.env.VITE_APP_SONG_ID': JSON.stringify('8407304077'),
     // 修复 Node.js 全局变量
     global: 'globalThis',
     'global.process': JSON.stringify({}),
     'global.Buffer': JSON.stringify({})
+  },
+  optimizeDeps: {
+    exclude: ['@vitejs/plugin-vue']
+  },
+  esbuild: {
+    target: 'esnext'
   },
   plugins: [
     vue(),

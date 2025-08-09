@@ -40,7 +40,7 @@ const currentTime = ref({});
 const timeInterval = ref(null);
 
 // 播放器 id
-const playerHasId = process.env.VUE_APP_SONG_ID;
+const playerHasId = import.meta.env.VITE_APP_SONG_ID;
 
 // 更新时间
 const updateTimeData = () => {

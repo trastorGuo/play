@@ -38,6 +38,17 @@ const routes = [
     }
   },
   {
+    path: '/itinerary',
+    name: 'Itinerary',
+    component: () => import('@/pages/Itinerary.vue'),
+    meta: {
+      title: '北疆10天逐小时行程',
+      icon: 'Calendar',
+      showInNav: true,
+      metaKey: 'itinerary'
+    }
+  },
+  {
     path: '/room/:roomId?',
     name: 'Room',
     component: () => import('@/pages/Room.vue'),

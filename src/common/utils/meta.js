@@ -108,6 +108,17 @@ function getIconSVG(iconType, size, bgColor = '#4F46E5') {
         </g>
       `;
       
+    case 'itinerary':
+      return `
+        <g transform="translate(${center - iconSize / 2}, ${center - iconSize / 2})">
+          <path d="M${iconSize * 0.2} ${iconSize * 0.3} L${iconSize * 0.8} ${iconSize * 0.3} L${iconSize * 0.8} ${iconSize * 0.7} L${iconSize * 0.2} ${iconSize * 0.7} Z" fill="${iconColor}"/>
+          <path d="M${iconSize * 0.2} ${iconSize * 0.4} L${iconSize * 0.8} ${iconSize * 0.4} L${iconSize * 0.8} ${iconSize * 0.6} L${iconSize * 0.2} ${iconSize * 0.6} Z" fill="${iconColor}"/>
+          <path d="M${iconSize * 0.2} ${iconSize * 0.5} L${iconSize * 0.8} ${iconSize * 0.5} L${iconSize * 0.8} ${iconSize * 0.5} L${iconSize * 0.2} ${iconSize * 0.5} Z" fill="${iconColor}"/>
+          <path d="M${iconSize * 0.2} ${iconSize * 0.6} L${iconSize * 0.8} ${iconSize * 0.6} L${iconSize * 0.8} ${iconSize * 0.4} L${iconSize * 0.2} ${iconSize * 0.4} Z" fill="${iconColor}"/>
+          <path d="M${iconSize * 0.2} ${iconSize * 0.7} L${iconSize * 0.8} ${iconSize * 0.7} L${iconSize * 0.8} ${iconSize * 0.3} L${iconSize * 0.2} ${iconSize * 0.3} Z" fill="${iconColor}"/>
+        </g>
+      `;
+      
     default:
       return `<circle cx="${center}" cy="${center}" r="${iconSize / 2}" fill="${iconColor}"/>`;
   }
@@ -122,7 +133,8 @@ export function getPageIcon(pageKey) {
     home: { bgColor: '#4F46E5' },
     tool: { bgColor: '#059669' },
     cardGame: { bgColor: '#DC2626' },
-    room: { bgColor: '#7C3AED' }
+    room: { bgColor: '#7C3AED' },
+    itinerary: { bgColor: '#0EA5E9' }
   };
   
   const config = iconConfigs[pageKey] || iconConfigs.home;
@@ -281,6 +293,14 @@ export const pageMetas = {
     image: getPageIcon('room'),
     url: 'https://www.trastor.com/room',
     favicon: getPageIcon('room')
+  },
+  itinerary: {
+    title: '北疆10天逐小时行程 - trastor 主页',
+    description: '国庆自驾北疆10天晚起晚玩版：单页总览 + 每天09:00-23:30逐小时时间轴、行车/景点/用餐/日落/夜游清晰标注。',
+    keywords: '北疆,自驾,行程,喀纳斯,禾木,赛里木湖,那拉提,巴音布鲁克,国庆,逐小时,旅行计划',
+    image: getPageIcon('itinerary'),
+    url: 'https://www.trastor.com/itinerary',
+    favicon: getPageIcon('itinerary')
   }
 };
 

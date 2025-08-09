@@ -24,6 +24,8 @@ html, body {
   height: 100%;
   overflow-x: hidden;
   overflow-y: auto;
+  position: relative;
+  -webkit-overflow-scrolling: touch;
 }
 
 #app {
@@ -31,6 +33,24 @@ html, body {
   overflow-x: hidden;
   overflow-y: auto;
   width: 100%;
+  position: relative;
+}
+
+/* 移动端设置2000px宽度，支持滑动查看 */
+@media (max-width: 768px) {
+  html, body {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    height: 100%;
+  }
+  
+  #app {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    min-height: 100vh;
+  }
 }
 
 /* Element Plus 组件移动端适配 */
@@ -48,30 +68,7 @@ html, body {
   box-sizing: border-box;
 }
 
-/* 按钮在移动端的适配 */
-@media (max-width: 768px) {
-  .el-button {
-    font-size: 14px;
-    padding: 8px 15px;
-  }
-  
-  .el-button--large {
-    font-size: 16px;
-    padding: 10px 18px;
-  }
-}
-
-@media (max-width: 375px) {
-  .el-button {
-    font-size: 13px;
-    padding: 6px 12px;
-  }
-  
-  .el-button--large {
-    font-size: 14px;
-    padding: 8px 15px;
-  }
-}
+/* 移除按钮移动端适配，保持PC端样式 */
 
 /* 路由过渡动画 */
 .router-link-active {

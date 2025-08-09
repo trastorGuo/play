@@ -20,7 +20,7 @@ import { mainStore } from "@/store";
 const store = mainStore();
 
 // 配置
-const siteName = process.env.VUE_APP_SITE_NAME || "trastor";
+const siteName = import.meta.env.VITE_APP_SITE_NAME || "trastor";
 </script>
 
 <style lang="scss" scoped>

@@ -92,9 +92,9 @@ const volumeNum = ref(store.musicVolume ? store.musicVolume : 0.7);
 const musicListShow = ref(false);
 const playerRef = ref(null);
 const playerData = reactive({
-  server: process.env.VUE_APP_SONG_SERVER,
-  type: process.env.VUE_APP_SONG_TYPE,
-  id: process.env.VUE_APP_SONG_ID
+  server: import.meta.env.VITE_APP_SONG_SERVER,
+type: import.meta.env.VITE_APP_SONG_TYPE,
+id: import.meta.env.VITE_APP_SONG_ID
 });
 
 // 开启播放列表

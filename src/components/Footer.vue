@@ -48,12 +48,12 @@ const fullYear = new Date().getFullYear();
 // 加载配置数据
 // const siteStartDate = ref(process.env.VUE_APP_SITE_START);
 const startYear = ref(
-  process.env.VUE_APP_SITE_START?.length >= 4 ? 
-  process.env.VUE_APP_SITE_START.substring(0, 4) : null
+  import.meta.env.VITE_APP_SITE_START?.length >= 4 ?
+import.meta.env.VITE_APP_SITE_START.substring(0, 4) : null
 );
-const siteAuthor = ref(process.env.VUE_APP_SITE_AUTHOR);
+const siteAuthor = ref(import.meta.env.VITE_APP_SITE_AUTHOR);
 const siteUrl = computed(() => {
-  const url = process.env.VUE_APP_SITE_URL;
+  const url = import.meta.env.VITE_APP_SITE_URL;
   if(!url) return "https://www.trastor.com";
   // 判断协议前缀
   if(!url.startsWith("http://") && !url.startsWith("https://")) {

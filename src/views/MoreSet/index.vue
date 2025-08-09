@@ -62,7 +62,7 @@ const closeShow = ref(false);
 
 // 站点链接
 const siteUrl = computed(() => {
-  const url = process.env.VUE_APP_SITE_URL;
+  const url = import.meta.env.VITE_APP_SITE_URL;
   if(!url) return "trastor.com".split(".");
   // 判断协议前缀
   if(url.startsWith("http://") || url.startsWith("https://")) {
