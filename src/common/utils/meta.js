@@ -1,6 +1,7 @@
 /**
  * 页面 Meta 信息管理工具
  */
+import { onMounted, onUnmounted } from 'vue';
 
 /**
  * 自动生成SVG图标
@@ -131,10 +132,10 @@ export function getPageIcon(pageKey) {
 // 默认的 Meta 信息
 const defaultMeta = {
   title: 'trastor 主页',
-  description: '无名的个人主页，分享生活点滴，记录美好时光。提供工具集合、打牌记账等实用功能。',
-  keywords: '无名主页,trastor,个人主页,工具集合,打牌记账',
+  description: 'trastor的个人主页，分享生活点滴，记录美好时光。提供工具集合、打牌记账等实用功能。',
+  keywords: 'trastor主页,trastor,个人主页,工具集合,打牌记账',
   image: getPageIcon('home'),
-  url: 'https://www.trastor.com/',
+  url: 'https://www.6rem.com/',
   favicon: '/images/icon/favicon.ico'
 };
 
@@ -248,8 +249,8 @@ export function resetPageMeta() {
 export const pageMetas = {
   home: {
     title: 'trastor 主页',
-    description: '无名的个人主页，分享生活点滴，记录美好时光。提供工具集合、打牌记账等实用功能。',
-    keywords: '无名主页,trastor,个人主页,工具集合,打牌记账',
+    description: 'trastor的个人主页，分享生活点滴，记录美好时光。提供工具集合、打牌记账等实用功能。',
+    keywords: 'trastor主页,trastor,个人主页,工具集合,打牌记账',
     image: getPageIcon('home'),
     url: 'https://www.trastor.com/',
     favicon: getPageIcon('home')
@@ -298,7 +299,7 @@ export function usePageMeta(pageKey, customMeta = {}) {
     };
   }
   
-  const { onMounted, onUnmounted } = require('vue');
+  // Vue 的生命周期钩子已在文件顶部导入
   
   onMounted(() => {
     const baseMeta = pageMetas[pageKey] || pageMetas.home;

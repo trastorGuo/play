@@ -15,6 +15,7 @@ const room_2 = require("../entity/bookkeeping/room");
 const roomUser_entity_1 = require("../entity/bookkeeping/roomUser.entity");
 const expenseRecord_entity_1 = require("../entity/bookkeeping/expenseRecord.entity");
 const redis_service_1 = require("../service/redis.service");
+const app_controller_1 = require("../controller/app.controller");
 let AppModule = class AppModule {
 };
 AppModule = __decorate([
@@ -34,6 +35,7 @@ AppModule = __decorate([
                 synchronize: true
             })
         ],
+        controllers: [app_controller_1.AppController],
         providers: [redis_service_1.RedisService],
         exports: [redis_service_1.RedisService]
     })

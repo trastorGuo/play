@@ -12,6 +12,7 @@ import { Room } from '../entity/bookkeeping/room';
 import { RoomUser } from '../entity/bookkeeping/roomUser.entity';
 import { ExpenseRecord } from '../entity/bookkeeping/expenseRecord.entity';
 import { RedisService } from '../service/redis.service';
+import { AppController } from '../controller/app.controller';
 
 @Module({
     imports: [
@@ -29,6 +30,7 @@ import { RedisService } from '../service/redis.service';
             synchronize: true
         })
     ],
+    controllers: [AppController],
     providers: [RedisService],
     exports: [RedisService]
 })
