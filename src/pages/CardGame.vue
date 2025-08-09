@@ -12,7 +12,7 @@
     </template>
   </PageNavigation>
   
-  <div class="card-game-page">
+  <div class="card-game-page dark-theme">
     <div class="game-content">
       <!-- 主标题区域 -->
       <div class="hero-section">

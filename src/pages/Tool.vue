@@ -6,7 +6,7 @@
         back-path="/"
     />
     
-    <div class="tool-page">
+    <div class="tool-page dark-theme">
         <el-tabs v-model="tabActive" type="border-card">
             <el-tab-pane 
                 v-for="(item, index) in TabList" 

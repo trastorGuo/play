@@ -6,7 +6,7 @@
     back-path="/card-game"
   />
   
-  <div class="admin-page">
+  <div class="admin-page dark-theme">
     <div class="admin-content">
       <!-- 搜索过滤区域 -->
       <div class="filter-section">

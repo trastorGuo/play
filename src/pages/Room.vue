@@ -7,7 +7,7 @@
     :force-back-path="true"
   />
   
-  <div class="room-page">
+  <div class="room-page dark-theme">
     <div class="room-content">
       <!-- 用户列表 -->
       <div class="users-section">

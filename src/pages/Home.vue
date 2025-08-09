@@ -1,30 +1,34 @@
 <template>
-  <!-- 加载 -->
-  <Loading />
-  <!-- 壁纸 -->
-  <Background @loadComplete="loadComplete" />
-  <!-- 主界面 -->
-  <Transition name="fade" mode="out-in">
-    <main id="main" v-if="store.imgLoadStatus">
-      <div class="main-container" v-show="!store.backgroundShow">
-        <section class="all" v-show="!store.setOpenState">
-          <MainLeft />
-          <MainRight v-show="!store.boxOpenState" />
-          <Box v-show="store.boxOpenState" />
-        </section>
-        <section class="more" v-show="store.setOpenState" @click="store.setOpenState = false">
-          <MoreSet />
-        </section>
-      </div>
-      <!-- 页脚 -->
-      <Transition name="fade" mode="out-in">
-        <Footer class="f-ter" v-show="!store.backgroundShow && !store.setOpenState" />
-      </Transition>
-    </main>
-  </Transition>
+  <div class="dark-theme">
+    <!-- 加载 -->
+    <Loading />
+    <!-- 壁纸 -->
+    <Background @loadComplete="loadComplete" />
+    <!-- 主界面 -->
+    <Transition name="fade" mode="out-in">
+      <main id="main" v-if="store.imgLoadStatus">
+        <div class="main-container" v-show="!store.backgroundShow">
+          <section class="all" v-show="!store.setOpenState">
+            <MainLeft />
+            <MainRight v-show="!store.boxOpenState" />
+            <Box v-show="store.boxOpenState" />
+          </section>
+          <section class="more" v-show="store.setOpenState" @click="store.setOpenState = false">
+            <MoreSet />
+          </section>
+        </div>
+        <!-- 页脚 -->
+        <Transition name="fade" mode="out-in">
+          <Footer class="f-ter" v-show="!store.backgroundShow && !store.setOpenState" />
+        </Transition>
+      </main>
+    </Transition>
+  </div>
 </template>
 
 <script setup>
+import { nextTick, watch, onMounted, onBeforeUnmount } from 'vue';
+import { ElMessage } from 'element-plus';
 import { mainStore } from "@/store";
 import Loading from "@/components/Loading.vue";
 import MainLeft from "@/views/Main/Left.vue";

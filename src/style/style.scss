@@ -44,6 +44,7 @@ body {
   font-family: "HarmonyOS_Regular", sans-serif;
 }
 
+// 全局样式
 *,
 a,
 p {
@@ -51,12 +52,40 @@ p {
   padding: 0;
   user-select: none;
   text-decoration: none;
-  color: #fff;
+  // color: #fff;
   box-sizing: border-box;
 
   &:hover {
     transition: 0.3s;
   }
+}
+
+// 深色主题页面的默认白色文字
+.dark-theme {
+  color: #fff;
+  
+  * {
+    color: inherit;
+  }
+  
+  // 确保链接在深色主题下的可见性
+  a {
+    color: #fff;
+    
+    &:hover {
+      color: rgb(57, 159, 255);
+    }
+  }
+}
+
+// 通用白色文字类
+.text-white {
+  color: #fff !important;
+}
+
+// 通用深色文字类（给明亮背景页面使用）
+.text-dark {
+  color: #333 !important;
 }
 
 // 链接悬停效果
