@@ -4,7 +4,7 @@
       <Icon size="20">
         <Link />
       </Icon>
-      <span class="title">我的页面</span>
+      <span class="title text-white">我的页面</span>
     </div>
     <!-- 网站列表 -->
     <Swiper

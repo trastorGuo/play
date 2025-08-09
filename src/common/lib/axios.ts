@@ -14,17 +14,12 @@ export interface Response {
 
 // 动态获取 API 基础地址
 function getBaseURL(): string {
-    // 开发环境使用代理，不需要指定完整的URL
-    if (process.env.NODE_ENV === 'development') {
-        return '';
-    }
-    
-    // 生产环境根据当前域名自动判断
+    // 生产环境或其他环境根据当前域名自动判断
     if (typeof window !== 'undefined') {
         const hostname = window.location.hostname;
         const protocol = window.location.protocol;
         
-        // 如果是本地访问（localhost 或 127.0.0.1）
+        // 如果是本地访问（localhost 或 127.0.0.1），使用6015端口访问后端
         if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.')) {
             return 'http://localhost:6015';
         }

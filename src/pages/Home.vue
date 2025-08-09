@@ -37,7 +37,7 @@ import Background from "@/components/Background.vue";
 import Footer from "@/components/Footer.vue";
 import Box from "@/views/Box/index.vue";
 import MoreSet from "@/views/MoreSet/index.vue";
-import cursorInit from "@/utils/cursor.js";
+
 import { helloInit, checkDays } from "@/utils/getTime.js";
 import config from "@/../package.json";
 
@@ -70,9 +70,6 @@ watch(
 );
 
 onMounted(() => {
-  // 自定义鼠标
-  cursorInit();
-
   // 屏蔽右键
   document.oncontextmenu = () => {
     ElMessage({

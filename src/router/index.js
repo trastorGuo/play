@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import Home from '@/pages/Home.vue';
 import Tool from '@/pages/Tool.vue';
+import Room from '@/pages/Room.vue';
 import { setPageMeta, pageMetas } from '@/common/utils/meta.js';
 
 const routes = [
@@ -51,7 +52,7 @@ const routes = [
   {
     path: '/room/:roomId?',
     name: 'Room',
-    component: () => import('@/pages/Room.vue'),
+    component: Room,
     meta: {
       title: '房间',
       showInNav: false,
