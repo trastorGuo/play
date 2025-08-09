@@ -35,4 +35,14 @@ export const addExpense = (data) => {
 // 离开房间
 export const leaveRoom = (roomCode, userId) => {
   return post(`/api/room/leave`, { roomCode, userId });
+};
+
+// 管理员API - 获取历史房间列表
+export const getAdminRoomsHistory = (params) => {
+  return get('/api/room/admin/rooms', params);
+};
+
+// 管理员API - 获取房间详细统计
+export const getAdminRoomStats = (roomCode) => {
+  return get(`/api/room/admin/room/${roomCode}/stats`);
 }; 

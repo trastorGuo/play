@@ -226,4 +226,56 @@ export class RoomController {
             });
         }
     }
+
+    // 简单的admin测试路由
+    @Get('admin/test')
+    async adminTest() {
+        return {
+            result: 1,
+            message: 'Admin路由工作正常',
+            timestamp: new Date().toISOString()
+        };
+    }
+
+    // 管理员API - 获取历史房间列表
+    @Get('admin/rooms')
+    async getAdminRoomsHistory(@Query() query: {
+        page?: number;
+        limit?: number;
+        status?: number;
+        ownerId?: number;
+        keyword?: string;
+    }) {
+        try {
+            const result = await this.roomService.getAdminRoomsHistory(query);
+            return {
+                result: 1,
+                data: result,
+                message: '获取房间列表成功'
+            };
+        } catch(error: any) {
+            return {
+                result: 0,
+                error_msg: error.message || '获取房间列表失败'
+            };
+        }
+    }
+
+    // 管理员API - 获取房间详细统计
+    @Get('admin/room/:roomCode/stats')
+    async getAdminRoomStats(@Param('roomCode') roomCode: string) {
+        try {
+            const stats = await this.roomService.getAdminRoomStats(roomCode);
+            return {
+                result: 1,
+                data: stats,
+                message: '获取房间统计成功'
+            };
+        } catch(error: any) {
+            return {
+                result: 0,
+                error_msg: error.message || '获取房间统计失败'
+            };
+        }
+    }
 }

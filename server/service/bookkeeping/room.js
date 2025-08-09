@@ -380,6 +380,171 @@ let RoomService = class RoomService {
             await this.roomRepository.decrement({ id: roomId }, 'currentUsers', 1);
         }
     }
+    async getAdminRoomsHistory(query) {
+        const page = query.page || 1;
+        const limit = query.limit || 20;
+        const offset = (page - 1) * limit;
+        let queryBuilder = this.roomRepository
+            .createQueryBuilder('room')
+            .leftJoinAndSelect('room.roomUsers', 'roomUsers')
+            .leftJoinAndSelect('room.expenseRecords', 'expenseRecords');
+        if (query.status !== undefined) {
+            queryBuilder = queryBuilder.andWhere('room.status = :status', { status: query.status });
+        }
+        if (query.ownerId) {
+            queryBuilder = queryBuilder.andWhere('room.ownerId = :ownerId', { ownerId: query.ownerId });
+        }
+        if (query.keyword) {
+            queryBuilder = queryBuilder.andWhere('(room.name LIKE :keyword OR room.ownerName LIKE :keyword OR room.roomCode LIKE :keyword)', { keyword: `%${query.keyword}%` });
+        }
+        const total = await queryBuilder.getCount();
+        const rooms = await queryBuilder
+            .orderBy('room.createdAt', 'DESC')
+            .skip(offset)
+            .take(limit)
+            .getMany();
+        const processedRooms = rooms.map(room => {
+            const activeUsers = room.roomUsers ? room.roomUsers.filter(user => user.status === 1).length : 0;
+            const totalTransactions = room.expenseRecords ? room.expenseRecords.length : 0;
+            const totalAmount = room.expenseRecords ?
+                room.expenseRecords.reduce((sum, record) => sum + Number(record.amount), 0) : 0;
+            let lastActivityTime = room.createdAt;
+            if (room.expenseRecords && room.expenseRecords.length > 0) {
+                const lastTransaction = room.expenseRecords.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+                lastActivityTime = lastTransaction.createdAt;
+            }
+            return {
+                id: room.id,
+                roomCode: room.roomCode,
+                name: room.name,
+                ownerId: room.ownerId,
+                ownerName: room.ownerName,
+                status: room.status,
+                maxUsers: room.maxUsers,
+                createdAt: room.createdAt,
+                updatedAt: room.updatedAt,
+                activeUsers,
+                totalUsers: room.roomUsers ? room.roomUsers.length : 0,
+                totalTransactions,
+                totalAmount: Number(totalAmount.toFixed(2)),
+                lastActivityTime
+            };
+        });
+        return {
+            rooms: processedRooms,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit)
+        };
+    }
+    async getAdminRoomStats(roomCode) {
+        const room = await this.roomRepository
+            .createQueryBuilder('room')
+            .leftJoinAndSelect('room.roomUsers', 'roomUsers')
+            .leftJoinAndSelect('room.expenseRecords', 'expenseRecords')
+            .where('room.roomCode = :roomCode', { roomCode })
+            .getOne();
+        if (!room) {
+            throw new Error('房间不存在');
+        }
+        const basicInfo = {
+            id: room.id,
+            roomCode: room.roomCode,
+            name: room.name,
+            ownerId: room.ownerId,
+            ownerName: room.ownerName,
+            status: room.status,
+            maxUsers: room.maxUsers,
+            createdAt: room.createdAt,
+            updatedAt: room.updatedAt
+        };
+        const activeUsers = room.roomUsers ? room.roomUsers.filter(user => user.status === 1) : [];
+        const inactiveUsers = room.roomUsers ? room.roomUsers.filter(user => user.status === 0) : [];
+        const userStats = {
+            totalUsers: room.roomUsers ? room.roomUsers.length : 0,
+            activeUsers: activeUsers.length,
+            inactiveUsers: inactiveUsers.length,
+            userList: activeUsers.map(user => ({
+                id: user.id,
+                userId: user.userId,
+                nickname: user.nickname,
+                balance: Number(user.balance),
+                joinedAt: user.createdAt,
+                isOwner: user.userId === room.ownerId
+            }))
+        };
+        const expenseRecords = room.expenseRecords || [];
+        const totalTransactions = expenseRecords.length;
+        const totalAmount = expenseRecords.reduce((sum, record) => sum + Number(record.amount), 0);
+        const userTransactionStats = {};
+        expenseRecords.forEach(record => {
+            if (!userTransactionStats[record.fromUserName]) {
+                userTransactionStats[record.fromUserName] = {
+                    nickname: record.fromUserName,
+                    totalPaid: 0,
+                    totalReceived: 0,
+                    transactionCount: 0
+                };
+            }
+            userTransactionStats[record.fromUserName].totalPaid += Number(record.amount);
+            userTransactionStats[record.fromUserName].transactionCount++;
+            if (!userTransactionStats[record.toUserName]) {
+                userTransactionStats[record.toUserName] = {
+                    nickname: record.toUserName,
+                    totalPaid: 0,
+                    totalReceived: 0,
+                    transactionCount: 0
+                };
+            }
+            userTransactionStats[record.toUserName].totalReceived += Number(record.amount);
+            if (userTransactionStats[record.toUserName].transactionCount === undefined) {
+                userTransactionStats[record.toUserName].transactionCount = 0;
+            }
+        });
+        Object.keys(userTransactionStats).forEach(nickname => {
+            const stats = userTransactionStats[nickname];
+            stats.netAmount = stats.totalReceived - stats.totalPaid;
+            stats.totalPaid = Number(stats.totalPaid.toFixed(2));
+            stats.totalReceived = Number(stats.totalReceived.toFixed(2));
+            stats.netAmount = Number(stats.netAmount.toFixed(2));
+        });
+        const transactionStats = {
+            totalTransactions,
+            totalAmount: Number(totalAmount.toFixed(2)),
+            averageTransactionAmount: totalTransactions > 0 ? Number((totalAmount / totalTransactions).toFixed(2)) : 0,
+            userStats: Object.values(userTransactionStats),
+            recentTransactions: expenseRecords
+                .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                .slice(0, 10)
+                .map(record => ({
+                id: record.id,
+                fromUserName: record.fromUserName,
+                toUserName: record.toUserName,
+                amount: Number(record.amount),
+                type: record.type,
+                note: record.note,
+                operatorName: record.operatorName,
+                createdAt: record.createdAt
+            }))
+        };
+        const firstTransaction = expenseRecords.length > 0 ?
+            expenseRecords.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())[0] : null;
+        const lastTransaction = expenseRecords.length > 0 ?
+            expenseRecords.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] : null;
+        const timeStats = {
+            roomDuration: room.createdAt ? Math.floor((new Date().getTime() - new Date(room.createdAt).getTime()) / (1000 * 60 * 60 * 24)) : 0,
+            firstTransactionTime: firstTransaction ? firstTransaction.createdAt : null,
+            lastTransactionTime: lastTransaction ? lastTransaction.createdAt : null,
+            lastActivityTime: lastTransaction ? lastTransaction.createdAt : room.updatedAt
+        };
+        return {
+            basicInfo,
+            userStats,
+            transactionStats,
+            timeStats
+        };
+    }
 };
 RoomService = __decorate([
     (0, common_1.Injectable)(),

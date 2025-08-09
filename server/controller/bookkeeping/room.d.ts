@@ -96,4 +96,43 @@ export declare class RoomController {
         message?: undefined;
     }>;
     subscribeToRoomEvents(roomCode: string, response: Response): Promise<void>;
+    adminTest(): Promise<{
+        result: number;
+        message: string;
+        timestamp: string;
+    }>;
+    getAdminRoomsHistory(query: {
+        page?: number;
+        limit?: number;
+        status?: number;
+        ownerId?: number;
+        keyword?: string;
+    }): Promise<{
+        result: number;
+        data: {
+            rooms: any[];
+            total: number;
+            page: number;
+            limit: number;
+            totalPages: number;
+        };
+        message: string;
+        error_msg?: undefined;
+    } | {
+        result: number;
+        error_msg: any;
+        data?: undefined;
+        message?: undefined;
+    }>;
+    getAdminRoomStats(roomCode: string): Promise<{
+        result: number;
+        data: any;
+        message: string;
+        error_msg?: undefined;
+    } | {
+        result: number;
+        error_msg: any;
+        data?: undefined;
+        message?: undefined;
+    }>;
 }

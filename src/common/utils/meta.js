@@ -108,6 +108,29 @@ function getIconSVG(iconType, size, bgColor = '#4F46E5') {
         </g>
       `;
       
+    case 'admin':
+      return `
+        <g transform="translate(${center - iconSize / 2}, ${center - iconSize / 2})">
+          <!-- 数据表格 -->
+          <rect x="${iconSize * 0.1}" y="${iconSize * 0.15}" width="${iconSize * 0.8}" height="${iconSize * 0.7}" rx="${iconSize * 0.03}" fill="${iconColor}"/>
+          
+          <!-- 表格线条 -->
+          <line x1="${iconSize * 0.15}" y1="${iconSize * 0.3}" x2="${iconSize * 0.85}" y2="${iconSize * 0.3}" stroke="${adjustBrightness(bgColor, -40)}" stroke-width="${iconSize * 0.015}"/>
+          <line x1="${iconSize * 0.15}" y1="${iconSize * 0.45}" x2="${iconSize * 0.85}" y2="${iconSize * 0.45}" stroke="${adjustBrightness(bgColor, -40)}" stroke-width="${iconSize * 0.015}"/>
+          <line x1="${iconSize * 0.15}" y1="${iconSize * 0.6}" x2="${iconSize * 0.85}" y2="${iconSize * 0.6}" stroke="${adjustBrightness(bgColor, -40)}" stroke-width="${iconSize * 0.015}"/>
+          <line x1="${iconSize * 0.15}" y1="${iconSize * 0.75}" x2="${iconSize * 0.85}" y2="${iconSize * 0.75}" stroke="${adjustBrightness(bgColor, -40)}" stroke-width="${iconSize * 0.015}"/>
+          
+          <!-- 垂直线条 -->
+          <line x1="${iconSize * 0.35}" y1="${iconSize * 0.3}" x2="${iconSize * 0.35}" y2="${iconSize * 0.8}" stroke="${adjustBrightness(bgColor, -40)}" stroke-width="${iconSize * 0.015}"/>
+          <line x1="${iconSize * 0.65}" y1="${iconSize * 0.3}" x2="${iconSize * 0.65}" y2="${iconSize * 0.8}" stroke="${adjustBrightness(bgColor, -40)}" stroke-width="${iconSize * 0.015}"/>
+          
+          <!-- 统计图标 -->
+          <circle cx="${iconSize * 0.25}" cy="${iconSize * 0.38}" r="${iconSize * 0.02}" fill="${adjustBrightness(bgColor, -40)}"/>
+          <circle cx="${iconSize * 0.5}" cy="${iconSize * 0.38}" r="${iconSize * 0.02}" fill="${adjustBrightness(bgColor, -40)}"/>
+          <circle cx="${iconSize * 0.75}" cy="${iconSize * 0.38}" r="${iconSize * 0.02}" fill="${adjustBrightness(bgColor, -40)}"/>
+        </g>
+      `;
+      
     case 'itinerary':
       return `
         <g transform="translate(${center - iconSize / 2}, ${center - iconSize / 2})">
@@ -134,7 +157,8 @@ export function getPageIcon(pageKey) {
     tool: { bgColor: '#059669' },
     cardGame: { bgColor: '#DC2626' },
     room: { bgColor: '#7C3AED' },
-    itinerary: { bgColor: '#0EA5E9' }
+    itinerary: { bgColor: '#0EA5E9' },
+    admin: { bgColor: '#4F46E5' } // Added admin icon config
   };
   
   const config = iconConfigs[pageKey] || iconConfigs.home;
@@ -301,6 +325,14 @@ export const pageMetas = {
     image: getPageIcon('itinerary'),
     url: 'https://www.trastor.com/itinerary',
     favicon: getPageIcon('itinerary')
+  },
+  admin: {
+    title: '管理页面 - trastor 主页',
+    description: 'trastor的管理后台，用于查看和编辑网站数据。',
+    keywords: '管理后台,网站数据,编辑,trastor',
+    image: getPageIcon('admin'),
+    url: 'https://www.trastor.com/admin',
+    favicon: getPageIcon('admin')
   }
 };
 

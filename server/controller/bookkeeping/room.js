@@ -182,6 +182,45 @@ let RoomController = class RoomController {
             });
         }
     }
+    async adminTest() {
+        return {
+            result: 1,
+            message: 'Admin路由工作正常',
+            timestamp: new Date().toISOString()
+        };
+    }
+    async getAdminRoomsHistory(query) {
+        try {
+            const result = await this.roomService.getAdminRoomsHistory(query);
+            return {
+                result: 1,
+                data: result,
+                message: '获取房间列表成功'
+            };
+        }
+        catch (error) {
+            return {
+                result: 0,
+                error_msg: error.message || '获取房间列表失败'
+            };
+        }
+    }
+    async getAdminRoomStats(roomCode) {
+        try {
+            const stats = await this.roomService.getAdminRoomStats(roomCode);
+            return {
+                result: 1,
+                data: stats,
+                message: '获取房间统计成功'
+            };
+        }
+        catch (error) {
+            return {
+                result: 0,
+                error_msg: error.message || '获取房间统计失败'
+            };
+        }
+    }
 };
 __decorate([
     (0, common_1.Post)('create'),
@@ -240,6 +279,26 @@ __decorate([
     __metadata("design:paramtypes", [String, typeof (_a = typeof express_1.Response !== "undefined" && express_1.Response) === "function" ? _a : Object]),
     __metadata("design:returntype", Promise)
 ], RoomController.prototype, "subscribeToRoomEvents", null);
+__decorate([
+    (0, common_1.Get)('admin/test'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], RoomController.prototype, "adminTest", null);
+__decorate([
+    (0, common_1.Get)('admin/rooms'),
+    __param(0, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], RoomController.prototype, "getAdminRoomsHistory", null);
+__decorate([
+    (0, common_1.Get)('admin/room/:roomCode/stats'),
+    __param(0, (0, common_1.Param)('roomCode')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], RoomController.prototype, "getAdminRoomStats", null);
 RoomController = __decorate([
     (0, common_1.Controller)('api/room'),
     __metadata("design:paramtypes", [room_1.RoomService])

@@ -44,4 +44,18 @@ export declare class RoomService {
         nickname: string;
     }): Promise<RoomUser>;
     leaveRoom(roomId: number, userId: number): Promise<void>;
+    getAdminRoomsHistory(query: {
+        page?: number;
+        limit?: number;
+        status?: number;
+        ownerId?: number;
+        keyword?: string;
+    }): Promise<{
+        rooms: any[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+    }>;
+    getAdminRoomStats(roomCode: string): Promise<any>;
 }

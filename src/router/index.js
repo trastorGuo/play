@@ -57,6 +57,16 @@ const routes = [
       showInNav: false,
       metaKey: 'room'
     }
+  },
+  {
+    path: '/admin',
+    name: 'Admin',
+    component: () => import('@/pages/Admin.vue'),
+    meta: {
+      title: '房间管理',
+      showInNav: false,
+      metaKey: 'admin'
+    }
   }
 ];
 
