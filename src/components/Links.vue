@@ -48,6 +48,7 @@ import { Link, Blog, CompactDisc, Cloud, Book, Fire, LaptopCode, Camera, Calenda
 import { Swiper, SwiperSlide } from "swiper/vue";
 import { Pagination, Mousewheel } from "swiper/modules";
 import { useRouter } from 'vue-router';
+import { computed, onMounted } from 'vue';
 
 const router = useRouter();
 
@@ -89,7 +90,7 @@ const jumpToRoute = (path) => {
 };
 
 onMounted(() => {
-  console.log('导航链接:', navLinks.value);
+
 });
 </script>
 

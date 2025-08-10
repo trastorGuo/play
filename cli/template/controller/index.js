@@ -1,2 +1,1 @@
-console.log("controller");
-console.log("<%- name %>");
+// 这是一个控制器模板文件

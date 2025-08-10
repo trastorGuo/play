@@ -548,10 +548,9 @@ const shareRoom = () => {
     }).then(() => {
       shareDialogVisible.value = false;
       Toast.success('分享成功！');
-    }).catch(err => {
-      console.log('分享失败:', err);
-      copyRoomLink();
-    });
+          }).catch(err => {
+        Toast.error('分享失败');
+      });
   } else {
     copyRoomLink();
   }
@@ -893,7 +892,6 @@ const connectWebSocket = async () => {
     wsManager.on('nicknameUpdated', handleWebSocketMessage);
     wsManager.on('roomDataUpdated', handleWebSocketMessage);
     
-    console.log('WebSocket连接已建立');
   } catch(error) {
     console.warn('WebSocket连接失败:', error);
     Toast.warning('实时连接失败，数据可能不会自动更新');
@@ -938,10 +936,8 @@ onUnmounted(() => {
 });
 
 // 处理WebSocket消息
-const handleWebSocketMessage = (data) => {
-  console.log('收到WebSocket消息:', data);
-  
-  // 根据事件类型处理 - 统一刷新数据
+  const handleWebSocketMessage = (data) => {
+    // 根据事件类型处理 - 统一刷新数据
   switch(data.type || data.event) {
     case 'nicknameUpdated':
     case 'nickname_updated':
@@ -969,11 +965,9 @@ const handleWebSocketMessage = (data) => {
       break;
     case 'roomJoined':
     case 'room_joined':
-      // 成功加入房间
-      console.log('成功加入房间WebSocket');
+              // 成功加入房间
       break;
-    default:
-      console.log('收到未知WebSocket消息:', data);
+          default:
   }
 };
 

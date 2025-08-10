@@ -26,6 +26,8 @@
 <script setup>
 import { mainStore } from "@/store";
 import { Error } from "@icon-park/vue-next";
+import { ref, watch, onMounted, onBeforeUnmount, h } from 'vue';
+import { ElMessage } from 'element-plus';
 
 const store = mainStore();
 const bgUrl = ref(null);
@@ -38,7 +40,7 @@ const bgRandom = Math.floor(Math.random() * 10 + 1);
 
 // 更换壁纸链接
 const changeBg = (type) => {
-  console.log("切换背景图片类型:", type);
+
   const typeNum = parseInt(type);
   if(typeNum === 0) {
     bgUrl.value = `/images/background${bgRandom}.jpg`;
@@ -53,10 +55,10 @@ const changeBg = (type) => {
 
 // 图片加载完成
 const imgLoadComplete = () => {
-  console.log("图片加载完成，开始延时设置状态");
+  
   imgTimeout.value = setTimeout(
     () => {
-      console.log("设置 imgLoadStatus 为 true");
+
       store.setImgLoadStatus(true);
     },
     Math.floor(Math.random() * (200 - 100 + 1)) + 100
@@ -65,7 +67,7 @@ const imgLoadComplete = () => {
 
 // 图片动画完成
 const imgAnimationEnd = () => {
-  console.log("壁纸加载且动画完成");
+  
   // 加载完成事件
   emit("loadComplete");
 };

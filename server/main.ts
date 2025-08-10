@@ -4,6 +4,7 @@
  * @Author: 
  * @LastEditTime: 2022-09-18 21:51:34
  */
+import * as dotenv from 'dotenv';
 import { NestFactory } from '@nestjs/core';
 import { TransformInterceptor } from './utils/interceptor';
 import { ExceptionsFilter } from './utils/exception.filter';
@@ -11,7 +12,10 @@ import { AppModule } from './module/app';
 import { Server } from 'socket.io';
 import { RoomGateway } from './gateway/room.gateway';
 
-const port = process.env.port || process.env.PORT || 6015;
+// 加载环境变量
+dotenv.config();
+
+const port = process.env.SERVER_PORT || process.env.PORT || 6015;
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
@@ -41,8 +45,7 @@ async function bootstrap() {
         roomGateway.handleConnection(socket);
     });
 
-    console.log(`server服务已启动，服务器网址：http://localhost:${port}`);
-    console.log(`WebSocket服务已启动，路径：ws://localhost:${port}/socket.io/`);
+    
 }
 
 bootstrap();

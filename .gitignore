@@ -21,3 +21,21 @@ pnpm-debug.log*
 *.njsproj
 *.sln
 *.sw?
+
+# 环境变量文件
+.env
+.env.local
+.env.production
+.env.development
+
+# 部署配置文件
+deploy.config.js
+deploy.config.local.js
+*.local.js
+
+# 本地部署目录
+local-deploy/
+
+# 敏感配置文件
+config/database.local.js
+config/server.local.js

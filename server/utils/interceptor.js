@@ -6,20 +6,23 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TestModule = void 0;
+exports.TransformInterceptor = void 0;
 const common_1 = require("@nestjs/common");
-const test_1 = require("../../controller/test/test");
-const test_2 = require("../../service/test/test");
-const users_entity_1 = require("../../entity/bookkeeping/users.entity");
-const typeorm_1 = require("@nestjs/typeorm");
-let TestModule = class TestModule {
+const operators_1 = require("rxjs/operators");
+let TransformInterceptor = class TransformInterceptor {
+    intercept(context, next) {
+        return next
+            .handle()
+            .pipe((0, operators_1.map)((data) => {
+            return {
+                data: data,
+                result: 1
+            };
+        }));
+    }
 };
-TestModule = __decorate([
-    (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([users_entity_1.User])],
-        controllers: [test_1.TestController],
-        providers: [test_2.TestService]
-    })
-], TestModule);
-exports.TestModule = TestModule;
-//# sourceMappingURL=test.js.map
+TransformInterceptor = __decorate([
+    (0, common_1.Injectable)()
+], TransformInterceptor);
+exports.TransformInterceptor = TransformInterceptor;
+//# sourceMappingURL=interceptor.js.map

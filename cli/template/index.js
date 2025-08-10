@@ -1,2 +1,1 @@
-console.log("index");
-console.log("<%- name %>");
+// 这是一个模板文件

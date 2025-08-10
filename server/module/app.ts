@@ -5,7 +5,6 @@
  * @LastEditTime: 2022-09-18 22:25:09
  */
 import { Module } from '@nestjs/common';
-import { TestModule }  from './test/test';
 import { RoomModule }  from './bookkeeping/room';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Room } from '../entity/bookkeeping/room';
@@ -13,18 +12,21 @@ import { RoomUser } from '../entity/bookkeeping/roomUser.entity';
 import { ExpenseRecord } from '../entity/bookkeeping/expenseRecord.entity';
 import { RedisService } from '../service/redis.service';
 import { AppController } from '../controller/app.controller';
+import * as dotenv from 'dotenv';
+
+// 确保环境变量在模块配置前加载
+dotenv.config();
 
 @Module({
     imports: [
-        TestModule,
         RoomModule,
         TypeOrmModule.forRoot({
             type: 'mysql',
-            host: '81.68.255.143',
-            port: 3306,
-            username: 'trastor',
-            password: 'ab1997gz0314',
-            database: 'play',
+            host: process.env.DB_HOST || 'localhost',
+            port: parseInt(process.env.DB_PORT || '3306'),
+            username: process.env.DB_USERNAME || 'root',
+            password: process.env.DB_PASSWORD || '',
+            database: process.env.DB_DATABASE || 'play',
             entities: [Room, RoomUser, ExpenseRecord],
             autoLoadEntities: true,
             synchronize: true

@@ -32,7 +32,7 @@ function create() {
             const targetDir = path.resolve(SERVER_FILE, 'test', rawPath);
             generate(targetDir, content);
         }
-        // console.log(files);
+      
       }).catch((error) => {
         console.error('出错啦！', error);
       });

@@ -34,7 +34,7 @@ class WebSocketManager {
 
                 // 连接成功
                 this.socket.on('connect', () => {
-                    console.log('WebSocket连接成功');
+              
                     this.isConnected = true;
                     this.reconnectAttempts = 0;
                     resolve();
@@ -51,7 +51,7 @@ class WebSocketManager {
 
                 // 断开连接
                 this.socket.on('disconnect', (reason) => {
-                    console.log('WebSocket断开连接:', reason);
+              
                     this.isConnected = false;
                     
                     // 自动重连
@@ -63,7 +63,7 @@ class WebSocketManager {
 
                 // 重连成功
                 this.socket.on('reconnect', () => {
-                    console.log('WebSocket重连成功');
+              
                     this.isConnected = true;
                     this.reconnectAttempts = 0;
                     
@@ -95,32 +95,32 @@ class WebSocketManager {
 
         // 加入房间成功
         this.socket.on('roomJoined', (data) => {
-            console.log('成功加入房间:', data);
+    
             this.currentRoom = data.roomCode;
             this.emit('roomJoined', data);
         });
 
         // 用户加入房间
         this.socket.on('userJoined', (data) => {
-            console.log('新用户加入:', data);
+    
             this.emit('userJoined', data);
         });
 
         // 用户离开房间
         this.socket.on('userLeft', (data) => {
-            console.log('用户离开:', data);
+    
             this.emit('userLeft', data);
         });
 
         // 收到新的支付记录
         this.socket.on('expenseAdded', (data) => {
-            console.log('新的支付记录:', data);
+    
             this.emit('expenseAdded', data);
         });
 
         // 昵称更新
         this.socket.on('nicknameUpdated', (data) => {
-            console.log('用户昵称更新:', data);
+    
             this.emit('nicknameUpdated', data);
         });
 
@@ -132,7 +132,7 @@ class WebSocketManager {
 
         // 房间数据更新
         this.socket.on('roomDataUpdated', (data) => {
-            console.log('房间数据更新:', data);
+    
             this.emit('roomDataUpdated', data);
         });
     }
@@ -189,7 +189,7 @@ class WebSocketManager {
     reconnect() {
         if (this.reconnectAttempts < this.maxReconnectAttempts) {
             this.reconnectAttempts++;
-            console.log(`尝试重连... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+      
             
             setTimeout(() => {
                 this.connect();

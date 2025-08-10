@@ -25,6 +25,8 @@ import { MusicOne, PlayWrong } from "@icon-park/vue-next";
 import { getPlayerList } from "@/api";
 import { mainStore } from "@/store";
 import APlayer from "@worstone/vue-aplayer";
+import { ref, computed, onMounted, nextTick, h } from 'vue';
+import { ElMessage } from 'element-plus';
 
 const store = mainStore();
 
@@ -88,7 +90,7 @@ onMounted(() => {
   nextTick(() => {
     try {
       getPlayerList(props.songServer, props.songType, props.songId).then((res) => {
-        console.log(res);
+
         // 更改播放器加载状态
         store.musicIsOk = true;
         // 生成歌单
@@ -114,7 +116,7 @@ onMounted(() => {
 
 // 播放
 const onPlay = () => {
-  console.log("播放");
+  
   playIndex.value = player.value.aplayer.index;
   // 播放状态
   store.setPlayerState(player.value.audioRef.paused);

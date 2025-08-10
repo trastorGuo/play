@@ -26,7 +26,7 @@ export class ExceptionsFilter implements ExceptionFilter {
         if(status !== HttpStatus.INTERNAL_SERVER_ERROR) {
             exceptionContent = (exception.getResponse() as ErrorType);
         }
-        console.log(exception);
+    
         response.status(status).json({
             result: exceptionContent.code,
             message: exceptionContent.content,

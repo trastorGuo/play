@@ -10,7 +10,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         // 使用Node.js EventEmitter作为简单的内存发布订阅
         const { EventEmitter } = require('events');
         this.eventEmitter = new EventEmitter();
-        console.log('Redis服务已启动（内存模式）');
+    
     }
 
     async onModuleDestroy() {

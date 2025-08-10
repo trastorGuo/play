@@ -1,117 +1,110 @@
-import { Injectable } from '@nestjs/common';
-import { RedisService } from '../service/redis.service';
-
-@Injectable()
-export class RoomGateway {
-    private connections: Map<string, any> = new Map(); // socketId -> socket
-    private userSocketMap = new Map<string, string>(); // userId -> socketId
-    private socketUserMap = new Map<string, string>(); // socketId -> userId
-    private roomUserMap = new Map<string, Set<string>>(); // roomCode -> Set<userId>
-
-    constructor(private readonly redisService: RedisService) {}
-
-    // 处理客户端连接
-    handleConnection(socket: any) {
-    
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.RoomGateway = void 0;
+const common_1 = require("@nestjs/common");
+const redis_service_1 = require("../service/redis.service");
+let RoomGateway = class RoomGateway {
+    constructor(redisService) {
+        Object.defineProperty(this, "redisService", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: redisService
+        });
+        Object.defineProperty(this, "connections", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+        Object.defineProperty(this, "userSocketMap", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+        Object.defineProperty(this, "socketUserMap", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+        Object.defineProperty(this, "roomUserMap", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+    }
+    handleConnection(socket) {
         this.connections.set(socket.id, socket);
-
-        // 监听加入房间事件
-        socket.on('joinRoom', async (data: { roomCode: string, userId: string, nickname: string }) => {
+        socket.on('joinRoom', async (data) => {
             await this.handleJoinRoom(data, socket);
         });
-
-        // 监听离开房间事件
-        socket.on('leaveRoom', async (data: { roomCode: string }) => {
+        socket.on('leaveRoom', async (data) => {
             await this.handleLeaveRoom(data, socket);
         });
-
-        // 监听房间消息事件
-        socket.on('room:message', async (data: any) => {
-        
+        socket.on('room:message', async (data) => {
             socket.emit('message', { received: true, data });
         });
-
-        // 监听断开连接
         socket.on('disconnect', () => {
             this.handleDisconnect(socket);
         });
     }
-
-    // 处理客户端断开连接
-    async handleDisconnect(socket: any) {
+    async handleDisconnect(socket) {
         const userId = this.socketUserMap.get(socket.id);
         if (userId) {
-            // 从所有房间中移除用户
             for (const [roomCode, users] of this.roomUserMap.entries()) {
                 if (users.has(userId)) {
                     users.delete(userId);
                     await this.redisService.removeUserFromRoomOnline(roomCode, userId);
-                    
-                    // 通知房间其他用户
                     this.broadcastToRoom(roomCode, 'userLeft', {
                         userId,
                         timestamp: new Date().toISOString()
                     });
-
-                    // 如果房间没有用户了，清理房间
                     if (users.size === 0) {
                         this.roomUserMap.delete(roomCode);
                     }
                 }
             }
-
             this.userSocketMap.delete(userId);
             this.socketUserMap.delete(socket.id);
         }
-        
         this.connections.delete(socket.id);
-    
     }
-
-    // 处理加入房间
-    async handleJoinRoom(
-        data: { roomCode: string, userId: string, nickname: string },
-        socket: any
-    ) {
+    async handleJoinRoom(data, socket) {
         try {
             const { roomCode, userId, nickname } = data;
-
-            // 验证数据
             if (!roomCode || !userId || !nickname) {
                 socket.emit('error', { message: '参数不完整' });
                 return;
             }
-
-            // 离开之前的房间
             const currentUserId = this.socketUserMap.get(socket.id);
             if (currentUserId) {
-                // 清理之前的房间关系
                 for (const [oldRoomCode, users] of this.roomUserMap.entries()) {
                     if (users.has(currentUserId)) {
                         await this.handleLeaveRoom({ roomCode: oldRoomCode }, socket);
                     }
                 }
             }
-
-            // 加入新房间
             socket.join(roomCode);
-            
-            // 更新映射关系
             this.userSocketMap.set(userId, socket.id);
             this.socketUserMap.set(socket.id, userId);
-            
             if (!this.roomUserMap.has(roomCode)) {
                 this.roomUserMap.set(roomCode, new Set());
             }
-            this.roomUserMap.get(roomCode)!.add(userId);
-
-            // 更新Redis中的在线用户
+            this.roomUserMap.get(roomCode).add(userId);
             await this.redisService.addUserToRoomOnline(roomCode, userId);
-
-            // 获取房间在线用户数
             const onlineCount = await this.redisService.getRoomOnlineCount(roomCode);
-
-            // 通知客户端加入成功
             socket.emit('roomJoined', {
                 roomCode,
                 userId,
@@ -119,45 +112,29 @@ export class RoomGateway {
                 onlineCount,
                 timestamp: new Date().toISOString()
             });
-
-            // 通知房间其他用户
             socket.to(roomCode).emit('userJoined', {
                 userId,
                 nickname,
                 onlineCount,
                 timestamp: new Date().toISOString()
             });
-
-            // 订阅Redis频道（用于跨服务器通信）
             await this.redisService.subscribeToRoom(roomCode, (event, eventData) => {
-                // 只做本地广播，避免无限递归
                 this.localBroadcastToRoom(roomCode, event, eventData);
             });
-
-        
-        } catch (error) {
+        }
+        catch (error) {
             console.error('加入房间失败:', error);
             socket.emit('error', { message: '加入房间失败' });
         }
     }
-
-    // 处理离开房间
-    async handleLeaveRoom(
-        data: { roomCode: string },
-        socket: any
-    ) {
+    async handleLeaveRoom(data, socket) {
         try {
             const { roomCode } = data;
             const userId = this.socketUserMap.get(socket.id);
-
             if (!userId) {
                 return;
             }
-
-            // 离开Socket.IO房间
             socket.leave(roomCode);
-
-            // 更新映射关系
             const roomUsers = this.roomUserMap.get(roomCode);
             if (roomUsers) {
                 roomUsers.delete(userId);
@@ -166,52 +143,33 @@ export class RoomGateway {
                     await this.redisService.unsubscribeFromRoom(roomCode);
                 }
             }
-
-            // 更新Redis中的在线用户
             await this.redisService.removeUserFromRoomOnline(roomCode, userId);
-
-            // 获取房间在线用户数
             const onlineCount = await this.redisService.getRoomOnlineCount(roomCode);
-
-            // 通知房间其他用户
             socket.to(roomCode).emit('userLeft', {
                 userId,
                 onlineCount,
                 timestamp: new Date().toISOString()
             });
-
-        
-        } catch (error) {
+        }
+        catch (error) {
             console.error('离开房间失败:', error);
         }
     }
-
-    // 发送房间消息（用于业务逻辑触发）
-    async broadcastToRoom(roomCode: string, event: string, data: any) {
-        // 本地广播
+    async broadcastToRoom(roomCode, event, data) {
         this.localBroadcastToRoom(roomCode, event, data);
-
-        // Redis广播（用于多服务器实例）
         await this.redisService.publishToRoom(roomCode, event, data);
     }
-
-    // 只做本地广播，不触发Redis发布
-    private localBroadcastToRoom(roomCode: string, event: string, data: any) {
+    localBroadcastToRoom(roomCode, event, data) {
         const roomSockets = this.getRoomSockets(roomCode);
         roomSockets.forEach(socket => {
-            socket.emit(event, {
-                ...data,
-                timestamp: new Date().toISOString()
-            });
+            socket.emit(event, Object.assign(Object.assign({}, data), { timestamp: new Date().toISOString() }));
         });
     }
-
-    // 获取房间中的所有socket连接
-    private getRoomSockets(roomCode: string): any[] {
+    getRoomSockets(roomCode) {
         const roomUsers = this.roomUserMap.get(roomCode);
-        if (!roomUsers) return [];
-
-        const sockets: any[] = [];
+        if (!roomUsers)
+            return [];
+        const sockets = [];
         roomUsers.forEach(userId => {
             const socketId = this.userSocketMap.get(userId);
             if (socketId) {
@@ -221,31 +179,27 @@ export class RoomGateway {
                 }
             }
         });
-
         return sockets;
     }
-
-    // 获取房间在线用户数
-    async getRoomOnlineCount(roomCode: string): Promise<number> {
+    async getRoomOnlineCount(roomCode) {
         return await this.redisService.getRoomOnlineCount(roomCode);
     }
-
-    // 检查用户是否在线
-    isUserOnline(userId: string): boolean {
+    isUserOnline(userId) {
         return this.userSocketMap.has(userId);
     }
-
-    // 向特定用户发送消息
-    async sendToUser(userId: string, event: string, data: any) {
+    async sendToUser(userId, event, data) {
         const socketId = this.userSocketMap.get(userId);
         if (socketId) {
             const socket = this.connections.get(socketId);
             if (socket) {
-                socket.emit(event, {
-                    ...data,
-                    timestamp: new Date().toISOString()
-                });
+                socket.emit(event, Object.assign(Object.assign({}, data), { timestamp: new Date().toISOString() }));
             }
         }
     }
-} 
+};
+RoomGateway = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [redis_service_1.RedisService])
+], RoomGateway);
+exports.RoomGateway = RoomGateway;
+//# sourceMappingURL=room.gateway.js.map
