@@ -32,7 +32,7 @@ export class LedgerV2Service {
       let room: RoomV2 | null = null; let joinCode = '';
       for (let attempt = 0; attempt < 8 && !room; attempt++) {
         const roomCode = String(randomInt(100000, 1000000)); joinCode = String(randomInt(1000, 10000));
-        try { const encrypted = this.encryptJoinCode(joinCode); room = await manager.save(RoomV2, manager.create(RoomV2, { roomCode, joinCodeHash: hash(`${this.joinPepper()}:${roomCode}:${joinCode}`), ...encrypted, name: input.name.trim(), ownerUserId: userId, status: 'active', maxMembers: 10, version: '1', closedAt: null })); }
+        try { const encrypted = this.encryptJoinCode(joinCode); room = await manager.save(RoomV2, manager.create(RoomV2, { roomCode, joinCodeHash: hash(`${this.joinPepper()}:${roomCode}:${joinCode}`), ...encrypted, name: input.name.trim(), ownerUserId: userId, status: 'active', maxMembers: 20, version: '1', closedAt: null })); }
         catch (error: any) { if (error?.code !== 'ER_DUP_ENTRY') throw error; }
       }
       if (!room) throw new Error('ROOM_CODE_EXHAUSTED');

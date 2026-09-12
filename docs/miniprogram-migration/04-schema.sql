@@ -16,6 +16,7 @@ CREATE TABLE users_v2 (
   KEY idx_users_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+
 CREATE TABLE refresh_tokens_v2 (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   user_id BIGINT UNSIGNED NOT NULL,
@@ -36,7 +37,7 @@ CREATE TABLE rooms_v2 (
   name VARCHAR(20) NOT NULL,
   owner_user_id BIGINT UNSIGNED NOT NULL,
   status VARCHAR(16) NOT NULL DEFAULT 'active',
-  max_members TINYINT UNSIGNED NOT NULL DEFAULT 10,
+  max_members TINYINT UNSIGNED NOT NULL DEFAULT 20,
   version BIGINT UNSIGNED NOT NULL DEFAULT 1,
   closed_at DATETIME(3) NULL,
   created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -48,7 +49,7 @@ CREATE TABLE rooms_v2 (
   KEY idx_rooms_status_updated (status, updated_at),
   CONSTRAINT fk_rooms_owner FOREIGN KEY (owner_user_id) REFERENCES users_v2(id),
   CONSTRAINT ck_rooms_status CHECK (status IN ('active', 'closed', 'archived')),
-  CONSTRAINT ck_rooms_max_members CHECK (max_members BETWEEN 2 AND 10)
+  CONSTRAINT ck_rooms_max_members CHECK (max_members BETWEEN 2 AND 20)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE room_members_v2 (
@@ -191,4 +192,3 @@ CREATE TABLE admin_audit_logs_v2 (
   KEY idx_admin_audit_user_created (admin_user_id, created_at),
   KEY idx_admin_audit_target (target_type, target_id, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-

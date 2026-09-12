@@ -52,7 +52,7 @@ let LedgerV2Service = class LedgerV2Service {
                 joinCode = String((0, crypto_1.randomInt)(1000, 10000));
                 try {
                     const encrypted = this.encryptJoinCode(joinCode);
-                    room = await manager.save(entities_1.RoomV2, manager.create(entities_1.RoomV2, Object.assign(Object.assign({ roomCode, joinCodeHash: hash(`${this.joinPepper()}:${roomCode}:${joinCode}`) }, encrypted), { name: input.name.trim(), ownerUserId: userId, status: 'active', maxMembers: 10, version: '1', closedAt: null })));
+                    room = await manager.save(entities_1.RoomV2, manager.create(entities_1.RoomV2, Object.assign(Object.assign({ roomCode, joinCodeHash: hash(`${this.joinPepper()}:${roomCode}:${joinCode}`) }, encrypted), { name: input.name.trim(), ownerUserId: userId, status: 'active', maxMembers: 20, version: '1', closedAt: null })));
                 }
                 catch (error) {
                     if ((error === null || error === void 0 ? void 0 : error.code) !== 'ER_DUP_ENTRY')

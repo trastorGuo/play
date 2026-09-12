@@ -386,7 +386,7 @@ __decorate([
     __metadata("design:type", String)
 ], RoomV2.prototype, "status", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'max_members', type: 'tinyint', unsigned: true, default: 10 }),
+    (0, typeorm_1.Column)({ name: 'max_members', type: 'tinyint', unsigned: true, default: 20 }),
     __metadata("design:type", Number)
 ], RoomV2.prototype, "maxMembers", void 0);
 __decorate([

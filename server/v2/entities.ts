@@ -45,7 +45,7 @@ export class RoomV2 {
   @Column({ length: 20 }) name: string;
   @Index() @Column({ name: 'owner_user_id', type: 'bigint', unsigned: true }) ownerUserId: string;
   @Column({ length: 16, default: 'active' }) status: 'active' | 'closed' | 'archived';
-  @Column({ name: 'max_members', type: 'tinyint', unsigned: true, default: 10 }) maxMembers: number;
+  @Column({ name: 'max_members', type: 'tinyint', unsigned: true, default: 20 }) maxMembers: number;
   @Column({ type: 'bigint', unsigned: true, default: 1 }) version: string;
   @Column({ name: 'closed_at', precision: 3, nullable: true }) closedAt: Date | null;
   @CreateDateColumn({ name: 'created_at', precision: 3 }) createdAt: Date;
