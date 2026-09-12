@@ -14,6 +14,8 @@ let TransformInterceptor = class TransformInterceptor {
         return next
             .handle()
             .pipe((0, operators_1.map)((data) => {
+            if (data && typeof data.success === 'boolean' && data.requestId !== undefined)
+                return data;
             return {
                 data: data,
                 result: 1

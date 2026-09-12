@@ -13,6 +13,7 @@ import { ExpenseRecord } from '../entity/bookkeeping/expenseRecord.entity';
 import { RedisService } from '../service/redis.service';
 import { AppController } from '../controller/app.controller';
 import * as dotenv from 'dotenv';
+import { V2Module } from '../v2/v2.module';
 
 // 确保环境变量在模块配置前加载
 dotenv.config();
@@ -20,6 +21,7 @@ dotenv.config();
 @Module({
     imports: [
         RoomModule,
+        V2Module,
         TypeOrmModule.forRoot({
             type: 'mysql',
             host: process.env.DB_HOST || 'localhost',
@@ -29,7 +31,9 @@ dotenv.config();
             database: process.env.DB_DATABASE || 'play',
             entities: [Room, RoomUser, ExpenseRecord],
             autoLoadEntities: true,
-            synchronize: true
+            synchronize: process.env.NODE_ENV !== 'production' && process.env.DB_SYNCHRONIZE_LEGACY === 'true',
+            migrations: [__dirname + '/../migrations/*.js'],
+            migrationsRun: process.env.DB_MIGRATIONS_RUN === 'true'
         })
     ],
     controllers: [AppController],

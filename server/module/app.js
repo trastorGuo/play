@@ -39,6 +39,7 @@ const expenseRecord_entity_1 = require("../entity/bookkeeping/expenseRecord.enti
 const redis_service_1 = require("../service/redis.service");
 const app_controller_1 = require("../controller/app.controller");
 const dotenv = __importStar(require("dotenv"));
+const v2_module_1 = require("../v2/v2.module");
 dotenv.config();
 let AppModule = class AppModule {
 };
@@ -46,6 +47,7 @@ AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
             room_1.RoomModule,
+            v2_module_1.V2Module,
             typeorm_1.TypeOrmModule.forRoot({
                 type: 'mysql',
                 host: process.env.DB_HOST || 'localhost',
@@ -55,7 +57,9 @@ AppModule = __decorate([
                 database: process.env.DB_DATABASE || 'play',
                 entities: [room_2.Room, roomUser_entity_1.RoomUser, expenseRecord_entity_1.ExpenseRecord],
                 autoLoadEntities: true,
-                synchronize: true
+                synchronize: process.env.NODE_ENV !== 'production' && process.env.DB_SYNCHRONIZE_LEGACY === 'true',
+                migrations: [__dirname + '/../migrations/*.js'],
+                migrationsRun: process.env.DB_MIGRATIONS_RUN === 'true'
             })
         ],
         controllers: [app_controller_1.AppController],

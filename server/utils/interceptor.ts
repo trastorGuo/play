@@ -15,6 +15,7 @@ export class TransformInterceptor implements NestInterceptor {
             .handle()
             .pipe(
                 map((data) => {
+                    if(data && typeof data.success === 'boolean' && data.requestId !== undefined) return data;
                     return {
                         data: data,
                         result: 1

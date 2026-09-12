@@ -12,6 +12,7 @@ let ExceptionsFilter = class ExceptionsFilter {
     catch(exception, host) {
         const ctx = host.switchToHttp();
         const response = ctx.getResponse();
+        const request = ctx.getRequest();
         const status = exception instanceof common_1.HttpException
             ? exception.getStatus()
             : common_1.HttpStatus.INTERNAL_SERVER_ERROR;
@@ -21,6 +22,12 @@ let ExceptionsFilter = class ExceptionsFilter {
         };
         if (status !== common_1.HttpStatus.INTERNAL_SERVER_ERROR) {
             exceptionContent = exception.getResponse();
+        }
+        if (String(request.url || '').startsWith('/api/v2')) {
+            const payload = exception instanceof common_1.HttpException ? exception.getResponse() : {};
+            if (status === common_1.HttpStatus.INTERNAL_SERVER_ERROR)
+                console.error('[api/v2]', request.method, request.url, (exception === null || exception === void 0 ? void 0 : exception.stack) || exception);
+            return response.status(status).json({ success: false, requestId: request.headers['x-request-id'] || '', error: { code: payload.code || 'INTERNAL_ERROR', message: payload.message || '服务暂时不可用' } });
         }
         response.status(status).json({
             result: exceptionContent.code,

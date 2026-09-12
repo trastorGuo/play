@@ -13,6 +13,7 @@ export class ExceptionsFilter implements ExceptionFilter {
         
         const ctx = host.switchToHttp();
         const response = ctx.getResponse();
+        const request = ctx.getRequest();
 
         const status =
         exception instanceof HttpException
@@ -27,6 +28,11 @@ export class ExceptionsFilter implements ExceptionFilter {
             exceptionContent = (exception.getResponse() as ErrorType);
         }
     
+        if(String(request.url || '').startsWith('/api/v2')) {
+            const payload = exception instanceof HttpException ? exception.getResponse() as any : {};
+            if(status === HttpStatus.INTERNAL_SERVER_ERROR) console.error('[api/v2]', request.method, request.url, exception?.stack || exception);
+            return response.status(status).json({ success: false, requestId: request.headers['x-request-id'] || '', error: { code: payload.code || 'INTERNAL_ERROR', message: payload.message || '服务暂时不可用' } });
+        }
         response.status(status).json({
             result: exceptionContent.code,
             message: exceptionContent.content,

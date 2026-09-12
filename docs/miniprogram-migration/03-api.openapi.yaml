@@ -1,0 +1,544 @@
+openapi: 3.0.3
+info:
+  title: Play Ledger Mini Program API
+  version: 2.0.0-draft
+  description: 多人牌局记账微信小程序 API v2 草案
+servers:
+  - url: https://api.example.com/api/v2
+security:
+  - bearerAuth: []
+tags:
+  - name: Auth
+  - name: Rooms
+  - name: Members
+  - name: Records
+  - name: Realtime
+paths:
+  /auth/wechat-login:
+    post:
+      tags: [Auth]
+      security: []
+      summary: 微信登录或注册
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string, minLength: 1, maxLength: 128 }
+      responses:
+        '200':
+          description: 登录成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      security: []
+      summary: 刷新业务 token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        '200':
+          description: 刷新成功，旧 refresh token 同时失效
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /rooms:
+    post:
+      tags: [Rooms]
+      summary: 创建房间
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, nickname]
+              properties:
+                name: { type: string, minLength: 1, maxLength: 20 }
+                nickname: { type: string, minLength: 1, maxLength: 10 }
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RoomSnapshotResponse' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /rooms/recent:
+    get:
+      tags: [Rooms]
+      summary: 获取最近参与房间
+      parameters:
+        - in: query
+          name: cursor
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 30, default: 10 }
+      responses:
+        '200':
+          description: 房间列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          items:
+                            type: array
+                            items: { $ref: '#/components/schemas/RoomSummary' }
+                          nextCursor: { type: string, nullable: true }
+  /rooms/{roomCode}:
+    get:
+      tags: [Rooms]
+      summary: 获取房间权威快照
+      parameters:
+        - $ref: '#/components/parameters/RoomCode'
+      responses:
+        '200':
+          description: 房间快照
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RoomSnapshotResponse' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /rooms/{roomCode}/preview:
+    get:
+      tags: [Rooms]
+      summary: 加入前预览
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/RoomCode'
+        - in: query
+          name: invite
+          required: false
+          schema: { type: string }
+      responses:
+        '200':
+          description: 仅返回可公开的房间摘要
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/RoomSummary' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /rooms/{roomCode}/join:
+    post:
+      tags: [Rooms]
+      summary: 加入或恢复成员身份
+      parameters:
+        - $ref: '#/components/parameters/RoomCode'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nickname]
+              properties:
+                nickname: { type: string, minLength: 1, maxLength: 10 }
+                inviteToken: { type: string, nullable: true }
+                legacyClaimCode: { type: string, nullable: true }
+      responses:
+        '200':
+          description: 加入成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RoomSnapshotResponse' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /rooms/{roomCode}/leave:
+    post:
+      tags: [Rooms]
+      summary: 离开房间
+      parameters:
+        - $ref: '#/components/parameters/RoomCode'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '204': { description: 已离开 }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /rooms/{roomCode}/close:
+    post:
+      tags: [Rooms]
+      summary: 房主关闭房间
+      parameters:
+        - $ref: '#/components/parameters/RoomCode'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: 关闭成功并返回结算
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Settlement' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /rooms/{roomCode}/me:
+    patch:
+      tags: [Members]
+      summary: 修改自己的房间昵称
+      parameters:
+        - $ref: '#/components/parameters/RoomCode'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nickname]
+              properties:
+                nickname: { type: string, minLength: 1, maxLength: 10 }
+      responses:
+        '200':
+          description: 修改成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RoomSnapshotResponse' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /rooms/{roomCode}/records:
+    get:
+      tags: [Records]
+      summary: 获取流水
+      parameters:
+        - $ref: '#/components/parameters/RoomCode'
+        - in: query
+          name: cursor
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 30 }
+        - in: query
+          name: relatedToMe
+          schema: { type: boolean, default: false }
+      responses:
+        '200':
+          description: 流水分页
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          items:
+                            type: array
+                            items: { $ref: '#/components/schemas/LedgerRecord' }
+                          nextCursor: { type: string, nullable: true }
+    post:
+      tags: [Records]
+      summary: 新增记账
+      parameters:
+        - $ref: '#/components/parameters/RoomCode'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [toMemberId, amountMinor]
+              properties:
+                toMemberId: { type: string }
+                amountMinor: { type: integer, minimum: 1, maximum: 9999999 }
+                note: { type: string, maxLength: 50, nullable: true }
+      responses:
+        '201':
+          description: 记账成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          record: { $ref: '#/components/schemas/LedgerRecord' }
+                          roomVersion: { type: integer, format: int64 }
+                          balances:
+                            type: array
+                            items: { $ref: '#/components/schemas/MemberBalance' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /rooms/{roomCode}/records/{recordId}/reverse:
+    post:
+      tags: [Records]
+      summary: 撤销一笔记账
+      parameters:
+        - $ref: '#/components/parameters/RoomCode'
+        - in: path
+          name: recordId
+          required: true
+          schema: { type: string }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string, maxLength: 100 }
+      responses:
+        '201':
+          description: 撤销成功，返回反向流水
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/LedgerRecord' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /rooms/{roomCode}/settlement:
+    get:
+      tags: [Records]
+      summary: 获取结算结果
+      parameters:
+        - $ref: '#/components/parameters/RoomCode'
+      responses:
+        '200':
+          description: 结算
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Settlement' }
+  /rooms/{roomCode}/share-code:
+    post:
+      tags: [Rooms]
+      summary: 获取邀请 token 和小程序码地址
+      parameters:
+        - $ref: '#/components/parameters/RoomCode'
+      responses:
+        '200':
+          description: 分享信息
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          inviteToken: { type: string }
+                          scene: { type: string }
+                          qrCodeUrl: { type: string, format: uri }
+  /realtime/ticket:
+    post:
+      tags: [Realtime]
+      summary: 获取一次性 WebSocket 票据
+      responses:
+        '200':
+          description: 票据有效期建议 60 秒
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          ticket: { type: string }
+                          expiresIn: { type: integer, example: 60 }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    RoomCode:
+      in: path
+      name: roomCode
+      required: true
+      schema: { type: string, pattern: '^[0-9]{6}$' }
+    IdempotencyKey:
+      in: header
+      name: Idempotency-Key
+      required: true
+      schema: { type: string, minLength: 16, maxLength: 64 }
+  responses:
+    Unauthorized:
+      description: 未登录或 token 无效
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    Forbidden:
+      description: 无权限
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    NotFound:
+      description: 资源不存在
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    Conflict:
+      description: 业务状态冲突
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  schemas:
+    SuccessEnvelope:
+      type: object
+      required: [success, requestId, data]
+      properties:
+        success: { type: boolean, enum: [true] }
+        requestId: { type: string }
+        data: {}
+    ErrorEnvelope:
+      type: object
+      required: [success, requestId, error]
+      properties:
+        success: { type: boolean, enum: [false] }
+        requestId: { type: string }
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              example: ROOM_NICKNAME_CONFLICT
+            message: { type: string }
+            details: { type: object, additionalProperties: true }
+    AuthResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [accessToken, refreshToken, expiresIn, user]
+              properties:
+                accessToken: { type: string }
+                refreshToken: { type: string }
+                expiresIn: { type: integer, example: 1800 }
+                user:
+                  type: object
+                  properties:
+                    id: { type: string }
+                    displayName: { type: string, nullable: true }
+    RoomSummary:
+      type: object
+      required: [roomCode, name, status, activeMembers, maxMembers]
+      properties:
+        roomCode: { type: string }
+        name: { type: string }
+        ownerNickname: { type: string }
+        status: { type: string, enum: [active, closed, archived] }
+        activeMembers: { type: integer }
+        maxMembers: { type: integer }
+        updatedAt: { type: string, format: date-time }
+    RoomSnapshotResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          properties:
+            data: { $ref: '#/components/schemas/RoomSnapshot' }
+    RoomSnapshot:
+      type: object
+      required: [id, roomCode, name, status, version, members, permissions]
+      properties:
+        id: { type: string }
+        roomCode: { type: string }
+        name: { type: string }
+        status: { type: string, enum: [active, closed, archived] }
+        version: { type: integer, format: int64 }
+        currentMemberId: { type: string }
+        members:
+          type: array
+          items: { $ref: '#/components/schemas/Member' }
+        recentRecords:
+          type: array
+          items: { $ref: '#/components/schemas/LedgerRecord' }
+        permissions:
+          type: object
+          properties:
+            canWrite: { type: boolean }
+            canClose: { type: boolean }
+            canReverseAny: { type: boolean }
+    Member:
+      type: object
+      required: [id, nickname, balanceMinor, role, status]
+      properties:
+        id: { type: string }
+        nickname: { type: string }
+        balanceMinor: { type: integer, format: int64 }
+        role: { type: string, enum: [owner, member] }
+        status: { type: string, enum: [active, left, removed] }
+        joinedAt: { type: string, format: date-time }
+    MemberBalance:
+      type: object
+      properties:
+        memberId: { type: string }
+        balanceMinor: { type: integer, format: int64 }
+    LedgerRecord:
+      type: object
+      required: [id, type, fromMemberId, toMemberId, amountMinor, createdAt]
+      properties:
+        id: { type: string }
+        type: { type: string, enum: [transfer, reversal] }
+        fromMemberId: { type: string }
+        fromNicknameSnapshot: { type: string }
+        toMemberId: { type: string }
+        toNicknameSnapshot: { type: string }
+        amountMinor: { type: integer, format: int64 }
+        note: { type: string, nullable: true }
+        originalRecordId: { type: string, nullable: true }
+        reversedAt: { type: string, format: date-time, nullable: true }
+        canReverse: { type: boolean }
+        createdAt: { type: string, format: date-time }
+    Settlement:
+      type: object
+      properties:
+        roomCode: { type: string }
+        status: { type: string }
+        totalRecords: { type: integer }
+        totalAmountMinor: { type: integer, format: int64 }
+        balances:
+          type: array
+          items:
+            allOf:
+              - $ref: '#/components/schemas/MemberBalance'
+              - type: object
+                properties:
+                  nickname: { type: string }
+
