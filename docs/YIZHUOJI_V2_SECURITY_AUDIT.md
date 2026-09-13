@@ -29,8 +29,7 @@
 
 ## 密钥与日志要求
 
-- `V2_TOKEN_SECRET`、`V2_REFRESH_SECRET`、`V2_JOIN_CODE_PEPPER`、`V2_JOIN_CODE_ENCRYPTION_KEY` 必须由密钥管理服务注入且彼此不同。
+- `V2_TOKEN_SECRET`、`WECHAT_IDENTITY_PEPPER`、`V2_JOIN_CODE_PEPPER`、`V2_JOIN_CODE_ENCRYPTION_KEY` 必须由服务端安全配置注入且彼此不同。
 - `WECHAT_APP_SECRET` 仅存在服务端；不得写入小程序、日志或镜像层。
 - 禁止记录 access/refresh token、微信 code、加入码、邀请 token、密钥和完整请求头。
 - 上传目录不应由静态服务器直接列目录；备份与清理任务按 `feedback_files_v2` 引用执行。
-

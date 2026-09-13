@@ -44,3 +44,26 @@ smoke 会创建两名测试用户与一个已关闭测试房间，验证 DTO 白
 ## 发布与回滚
 
 先备份 MySQL 和反馈图片目录并恢复演练，再执行 migration；灰度顺序为内部体验 → 新房间白名单 → 旧房间认领 → 全量。应用保留上一稳定镜像；API 异常时停止 v2 写入并回退应用，不能用旧快照覆盖已经产生的新账目。`FeedbackFiles2026091200030` 已有关联反馈后不可单独回滚，需用向前修复 migration。
+
+## 81.68.255.143 同仓部署记录（2026-09-13）
+
+- 单一 NestJS 镜像 `yizhuoji-backend:v1.0.1` 同时提供旧 `/api/room/*` 和新 `/api/v2/*`；仍由 `vueApp` 的 Nginx 将 `/api/` 代理到主机 6015 端口。`/socket.io/` 原配置保留，另加 `/ws` WebSocket 代理。
+- MySQL 的 `play` 库保留旧表与新 `*_v2` 表；新服务使用 `DB_SYNCHRONIZE_LEGACY=false`、`DB_MIGRATIONS_RUN=false`。切换前备份：`/root/backups/yizhuoji/play-pre-v1.0.1-20260913.sql.gz`，SHA-256 `d86c673fc489412bd6718ca9c80c5cd6c03a85b91a9bf76de675dd95e5e61ee0`。此备份仅供灾难恢复，**不能覆盖上线后写入的新账目**。
+- 容器 `play-backend` 使用私有网络 `yizhuoji-internal`，网络中的 `mysql`、`yizhuoji-redis` 提供数据库与 Redis；Redis 不映射公网端口。图片持久化到 `/opt/yizhuoji-v1.0.1/storage/`。
+- 生产配置在服务器 `/opt/yizhuoji-v1.0.1/backend.env`（权限 600），不纳入 Git。仍需管理员补入 `WECHAT_APP_SECRET`，再重启后端；在补入之前，真实微信登录和小程序码无法验收。证书更新亦未包含在本次操作。
+- 切换后验证：本机和 HTTPS `/api/v2/health` 均为 200，旧 `/api/room/admin/rooms` 为 200，`/ws` 能完成 101 握手；MySQL `rooms_v2` 只读查询、Redis `PING` 成功。临时验证容器 `yizhuoji-backend-staging` 已停止。
+
+重新构建时，在此仓库先运行 `npm ci && npm run build:server`，再执行 `docker build -f Dockerfile.yizhuoji -t yizhuoji-backend:<新版本> .`。生产环境更新应用镜像之前，必须先备份数据库及上传目录、核对 migration，并在独立本机端口验证。不要在生产库执行会创建测试房间的 smoke 脚本。
+
+仅应用回滚（不要回滚含新账目的数据库）：
+
+```bash
+ssh root@81.68.255.143
+docker stop play-backend
+docker rename play-backend play-backend-failed-v1.0.1
+docker rename play-backend-pre-v1.0.1 play-backend
+docker start play-backend
+curl -k -f https://www.6rem.com/api/room/admin/rooms
+```
+
+旧镜像另有 `play-backend:pre-yizhuoji-v1.0.1` 标签。若需恢复 Nginx 的原配置，将 `/opt/yizhuoji-v1.0.1/nginx-default.conf` 复制回 `vueApp:/etc/nginx/conf.d/default.conf`，运行 `docker exec vueApp nginx -t` 后 `docker exec vueApp nginx -s reload`。变更前后的 Nginx 配置均在 `/opt/yizhuoji-v1.0.1/`，新配置还保存在镜像 `vuenginxcontainer:yizhuoji-v1.0.1`。回滚应用后小程序 v2 会暂不可用，应先暂停小程序发布，而旧网页仍可运行。
