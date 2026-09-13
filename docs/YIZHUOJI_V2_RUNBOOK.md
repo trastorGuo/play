@@ -50,7 +50,7 @@ smoke 会创建两名测试用户与一个已关闭测试房间，验证 DTO 白
 - 单一 NestJS 镜像 `yizhuoji-backend:v1.0.1` 同时提供旧 `/api/room/*` 和新 `/api/v2/*`；仍由 `vueApp` 的 Nginx 将 `/api/` 代理到主机 6015 端口。`/socket.io/` 原配置保留，另加 `/ws` WebSocket 代理。
 - MySQL 的 `play` 库保留旧表与新 `*_v2` 表；新服务使用 `DB_SYNCHRONIZE_LEGACY=false`、`DB_MIGRATIONS_RUN=false`。切换前备份：`/root/backups/yizhuoji/play-pre-v1.0.1-20260913.sql.gz`，SHA-256 `d86c673fc489412bd6718ca9c80c5cd6c03a85b91a9bf76de675dd95e5e61ee0`。此备份仅供灾难恢复，**不能覆盖上线后写入的新账目**。
 - 容器 `play-backend` 使用私有网络 `yizhuoji-internal`，网络中的 `mysql`、`yizhuoji-redis` 提供数据库与 Redis；Redis 不映射公网端口。图片持久化到 `/opt/yizhuoji-v1.0.1/storage/`。
-- 生产配置在服务器 `/opt/yizhuoji-v1.0.1/backend.env`（权限 600），不纳入 Git。仍需管理员补入 `WECHAT_APP_SECRET`，再重启后端；在补入之前，真实微信登录和小程序码无法验收。证书更新亦未包含在本次操作。
+- 生产配置在服务器 `/opt/yizhuoji-v1.0.1/backend.env`（权限 600），不纳入 Git。2026-09-13 已将 AppID 更新为 `wx66bc3be527b94972`，重新创建容器后进程内值已核对。仍需管理员安全补入对应 `WECHAT_APP_SECRET`；更新 `--env-file` 后必须保留旧容器并以相同参数重新创建 `play-backend`，单纯 `docker restart` 不会重新读取环境文件。在补入之前，真实微信登录和小程序码无法验收。HTTPS 证书已更新至 2026-11-17，并通过严格 TLS 验证。
 - 切换后验证：本机和 HTTPS `/api/v2/health` 均为 200，旧 `/api/room/admin/rooms` 为 200，`/ws` 能完成 101 握手；MySQL `rooms_v2` 只读查询、Redis `PING` 成功。临时验证容器 `yizhuoji-backend-staging` 已停止。
 
 重新构建时，在此仓库先运行 `npm ci && npm run build:server`，再执行 `docker build -f Dockerfile.yizhuoji -t yizhuoji-backend:<新版本> .`。生产环境更新应用镜像之前，必须先备份数据库及上传目录、核对 migration，并在独立本机端口验证。不要在生产库执行会创建测试房间的 smoke 脚本。
