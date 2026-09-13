@@ -59,6 +59,7 @@ await call(`/rooms/${created.roomCode}/records/${first.record.id}/reverse`, { me
 const file=await upload(a.accessToken);await call('/feedback',{method:'POST',token:a.accessToken,body:{category:'bug',content:'smoke feedback',roomCode:created.roomCode,imageFileId:file.fileId}})
 const feedback=await call('/feedback',{token:a.accessToken});if(!feedback.items.some((item)=>item.content==='smoke feedback'))throw new Error('feedback persistence failed')
 const avatar=await uploadAvatar(a.accessToken);const profile=await call('/me',{method:'PATCH',token:a.accessToken,key:crypto.randomUUID(),body:{displayName:'冒烟用户',avatarFileId:avatar.fileId}});if(profile.displayName!=='冒烟用户'||!profile.avatarUrl)throw new Error('profile update failed')
+const recent=await call('/rooms/recent',{token:a.accessToken});const listed=recent.items.find((item)=>item.roomCode===created.roomCode);if(!listed?.memberPreviews?.some((member)=>member.avatarUrl===profile.avatarUrl)||listed.ownerAvatarUrl!==profile.avatarUrl)throw new Error('recent room avatars did not use saved profile image')
 const avatarResponse=await fetch(profile.avatarUrl);if(!avatarResponse.ok||avatarResponse.headers.get('content-type')!=='image/png')throw new Error('profile avatar serving failed')
 const me=await call('/me',{token:a.accessToken});if(me.roomStats.active<1||me.displayName!=='冒烟用户')throw new Error('profile stats failed')
 let deletionBlocked=false

@@ -15,7 +15,22 @@ export class LedgerV2Service {
     const members = await this.dataSource.getRepository(RoomMemberV2).find({ where: { userId }, order: { updatedAt: 'DESC' }, take: 30 });
     const rooms = members.length ? await this.dataSource.getRepository(RoomV2).createQueryBuilder('room').where('room.id IN (:...ids)', { ids: members.map((m) => m.roomId) }).getMany() : [];
     const roomMembers = members.length ? await this.dataSource.getRepository(RoomMemberV2).createQueryBuilder('member').where('member.room_id IN (:...ids)', { ids: members.map((m) => m.roomId) }).getMany() : [];
-    return members.map((member) => { const room = rooms.find((candidate) => String(candidate.id) === String(member.roomId))!; const peers=roomMembers.filter((item)=>String(item.roomId)===String(room.id)); return { roomCode: room.roomCode, name: room.name, ownerNickname: peers.find((item) => item.role === 'owner')?.nickname || '', status: room.status, activeMembers: peers.filter((item)=>item.status==='active').length, maxMembers: room.maxMembers, updatedAt: room.updatedAt, myBalancePoints: Number(member.balancePoints) }; });
+    const userIds = [...new Set(roomMembers.map((item) => item.userId).filter((id): id is string => Boolean(id)))];
+    const users = userIds.length ? await this.dataSource.getRepository(UserV2).createQueryBuilder('user').where('user.id IN (:...ids)', { ids: userIds }).getMany() : [];
+    const avatarByUser = new Map(users.map((user) => [String(user.id), user.avatarFileId ? this.avatarUrl(user.avatarFileId) : null]));
+    return members.map((member) => {
+      const room = rooms.find((candidate) => String(candidate.id) === String(member.roomId))!;
+      const peers = roomMembers.filter((item) => String(item.roomId) === String(room.id));
+      const owner = peers.find((item) => item.role === 'owner');
+      const activePeers = peers.filter((item) => item.status === 'active').sort((a, b) => a.joinedAt.getTime() - b.joinedAt.getTime());
+      const avatarOf = (peer: RoomMemberV2) => peer.userId ? avatarByUser.get(String(peer.userId)) || null : null;
+      return {
+        roomCode: room.roomCode, name: room.name, ownerNickname: owner?.nickname || '', ownerAvatarUrl: owner ? avatarOf(owner) : null,
+        status: room.status, activeMembers: activePeers.length, maxMembers: room.maxMembers, updatedAt: room.updatedAt,
+        myBalancePoints: Number(member.balancePoints),
+        memberPreviews: activePeers.map((peer) => ({ id: String(peer.id), nickname: peer.nickname, avatarUrl: avatarOf(peer) })),
+      };
+    });
   }
 
   async preview(roomCode: string, invite?: string, scene?: string) {

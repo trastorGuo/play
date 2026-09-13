@@ -11,3 +11,4 @@
 
 `scene`、分享卡片和 PNG 均不得返回余额、流水、加入码、邀请 token 或数据库 ID。收到版本跳跃、断线重连、切网或小程序 `onShow` 时，客户端必须重新请求房间快照，不以 WebSocket 消息计算余额。
 
+`GET /api/v2/rooms/recent` 仅向已加入房间的鉴权用户返回列表。每项新增 `ownerAvatarUrl: string | null` 与 `memberPreviews: { id, nickname, avatarUrl: string | null }[]`；头像地址来自用户已保存的资料图片，不由昵称伪造。房间内收到 WSS 版本变更后客户端依次拉取房间快照及当前筛选的记录列表；WSS 本身仍不传流水或余额。没有资料图片时前端显示昵称首字占位。

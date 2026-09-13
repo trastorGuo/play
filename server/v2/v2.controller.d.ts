@@ -18,7 +18,7 @@ export declare class RoomsV2Controller {
                 nickname: string;
                 avatarUrl: string;
                 balancePoints: number;
-                role: "member" | "owner";
+                role: "owner" | "member";
                 status: "active" | "left" | "removed";
                 joinedAt: Date;
             }[];
@@ -51,11 +51,17 @@ export declare class RoomsV2Controller {
                 roomCode: string;
                 name: string;
                 ownerNickname: string;
+                ownerAvatarUrl: string;
                 status: "active" | "closed" | "archived";
                 activeMembers: number;
                 maxMembers: number;
                 updatedAt: Date;
                 myBalancePoints: number;
+                memberPreviews: {
+                    id: string;
+                    nickname: string;
+                    avatarUrl: string;
+                }[];
             }[];
             nextCursor: any;
         };
@@ -75,7 +81,7 @@ export declare class RoomsV2Controller {
                 nickname: string;
                 avatarUrl: string;
                 balancePoints: number;
-                role: "member" | "owner";
+                role: "owner" | "member";
                 status: "active" | "left" | "removed";
                 joinedAt: Date;
             }[];
@@ -115,7 +121,7 @@ export declare class RoomsV2Controller {
                 nickname: string;
                 avatarUrl: string;
                 balancePoints: number;
-                role: "member" | "owner";
+                role: "owner" | "member";
                 status: "active" | "left" | "removed";
                 joinedAt: Date;
             }[];
@@ -241,7 +247,7 @@ export declare class RoomsV2Controller {
                 nickname: string;
                 avatarUrl: string;
                 balancePoints: number;
-                role: "member" | "owner";
+                role: "owner" | "member";
                 status: "active" | "left" | "removed";
                 joinedAt: Date;
             }[];

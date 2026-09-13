@@ -6,11 +6,17 @@ export declare class LedgerV2Service {
         roomCode: string;
         name: string;
         ownerNickname: string;
+        ownerAvatarUrl: string;
         status: "active" | "closed" | "archived";
         activeMembers: number;
         maxMembers: number;
         updatedAt: Date;
         myBalancePoints: number;
+        memberPreviews: {
+            id: string;
+            nickname: string;
+            avatarUrl: string;
+        }[];
     }[]>;
     preview(roomCode: string, invite?: string, scene?: string): Promise<{
         roomCode: string;
