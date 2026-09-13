@@ -1,9 +1,9 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { createCipheriv, createHash, randomBytes, randomInt } from 'crypto';
+import { createHash, randomBytes, randomInt } from 'crypto';
 import { DataSource, EntityManager } from 'typeorm';
 import { IdempotencyKeyV2, InviteTokenV2, LedgerRecordV2, OutboxEventV2, RoomMemberV2, RoomV2, UserV2 } from './entities';
 
-const hash = (value: string) => createHash('sha256').update(value).digest('hex');
+const hash = (value: string | Buffer) => createHash('sha256').update(value).digest('hex');
 const normalized = (value: string) => value.trim().normalize('NFKC').toLocaleLowerCase('zh-CN');
 const fail = (code: string, message: string) => new ConflictException({ code, message });
 
@@ -18,10 +18,10 @@ export class LedgerV2Service {
     return members.map((member) => { const room = rooms.find((candidate) => String(candidate.id) === String(member.roomId))!; const peers=roomMembers.filter((item)=>String(item.roomId)===String(room.id)); return { roomCode: room.roomCode, name: room.name, ownerNickname: peers.find((item) => item.role === 'owner')?.nickname || '', status: room.status, activeMembers: peers.filter((item)=>item.status==='active').length, maxMembers: room.maxMembers, updatedAt: room.updatedAt, myBalancePoints: Number(member.balancePoints) }; });
   }
 
-  async preview(roomCode: string, joinCode?: string, invite?: string, scene?: string) {
+  async preview(roomCode: string, invite?: string, scene?: string) {
     const room = await this.roomByCode(roomCode);
     const tokenValid = await this.validInvite(room.id, invite, scene);
-    if ((!joinCode || hash(`${this.joinPepper()}:${roomCode}:${joinCode}`) !== room.joinCodeHash) && !tokenValid) throw new NotFoundException({ code: 'INVITE_INVALID', message: '邀请已失效' });
+    if ((invite || scene) && !tokenValid) throw new NotFoundException({ code: 'INVITE_INVALID', message: '邀请已失效' });
     const members = await this.dataSource.getRepository(RoomMemberV2).find({ where: { roomId: room.id, status: 'active' } });
     return { roomCode, name: room.name, ownerNickname: members.find((m) => m.role === 'owner')?.nickname || '', status: room.status, activeMembers: members.length, maxMembers: room.maxMembers, updatedAt: room.updatedAt };
   }
@@ -29,25 +29,26 @@ export class LedgerV2Service {
   async create(userId: string, input: { name: string; nickname: string }, key: string) {
     this.validateRoomName(input.name); this.validateNickname(input.nickname);
     return this.dataSource.transaction(async (manager) => this.idempotent(manager, userId, key, 'room.create', input, async () => {
-      let room: RoomV2 | null = null; let joinCode = '';
+      let room: RoomV2 | null = null;
       for (let attempt = 0; attempt < 8 && !room; attempt++) {
-        const roomCode = String(randomInt(100000, 1000000)); joinCode = String(randomInt(1000, 10000));
-        try { const encrypted = this.encryptJoinCode(joinCode); room = await manager.save(RoomV2, manager.create(RoomV2, { roomCode, joinCodeHash: hash(`${this.joinPepper()}:${roomCode}:${joinCode}`), ...encrypted, name: input.name.trim(), ownerUserId: userId, status: 'active', maxMembers: 20, version: '1', closedAt: null })); }
+        const roomCode = String(randomInt(100000, 1000000));
+        // Preserve the non-null legacy column for rollback; no usable join code is generated or returned.
+        try { room = await manager.save(RoomV2, manager.create(RoomV2, { roomCode, joinCodeHash: hash(randomBytes(32)), joinCodeCiphertext: null, joinCodeIv: null, joinCodeTag: null, name: input.name.trim(), ownerUserId: userId, status: 'active', maxMembers: 20, version: '1', closedAt: null })); }
         catch (error: any) { if (error?.code !== 'ER_DUP_ENTRY') throw error; }
       }
       if (!room) throw new Error('ROOM_CODE_EXHAUSTED');
       await manager.save(RoomMemberV2, manager.create(RoomMemberV2, { roomId: room.id, userId, legacyRoomUserId: null, nickname: input.nickname.trim(), nicknameNormalized: normalized(input.nickname), balancePoints: '0', role: 'owner', status: 'active', leftAt: null }));
-      await this.outbox(manager, room, 'room.created'); return { ...(await this.snapshotWith(manager, room, userId)), joinCode };
+      await this.outbox(manager, room, 'room.created'); return this.snapshotWith(manager, room, userId);
     }));
   }
 
-  async join(userId: string, roomCode: string, input: { nickname: string; joinCode?: string; inviteToken?: string; scene?: string }, key: string) {
+  async join(userId: string, roomCode: string, input: { nickname: string; inviteToken?: string; scene?: string }, key: string) {
     this.validateNickname(input.nickname);
     return this.dataSource.transaction(async (manager) => this.idempotent(manager, userId, key, 'room.join', { roomCode, ...input }, async () => {
       const room = await manager.getRepository(RoomV2).createQueryBuilder('room').setLock('pessimistic_write').where('room.room_code=:roomCode', { roomCode }).getOne();
       if (!room) throw new NotFoundException({ code: 'ROOM_NOT_FOUND', message: '房间号无效或房间已删除' }); this.assertWritable(room);
       const tokenValid = await this.validInvite(room.id,input.inviteToken,input.scene,manager);
-      if ((!input.joinCode || hash(`${this.joinPepper()}:${roomCode}:${input.joinCode}`) !== room.joinCodeHash) && !tokenValid) throw new NotFoundException({ code: 'INVITE_INVALID', message: '邀请已失效' });
+      if ((input.inviteToken || input.scene) && !tokenValid) throw new NotFoundException({ code: 'INVITE_INVALID', message: '邀请已失效' });
       const repository = manager.getRepository(RoomMemberV2); let member = await repository.findOne({ where: { roomId: room.id, userId } });
       const active = await repository.find({ where: { roomId: room.id, status: 'active' } });
       if (active.some((item) => item.id !== member?.id && item.nicknameNormalized === normalized(input.nickname))) throw fail('ROOM_NICKNAME_CONFLICT', '这个昵称已有人使用');
@@ -108,9 +109,7 @@ export class LedgerV2Service {
   private assertWritable(room:RoomV2){if(room.status!=='active')throw fail('ROOM_CLOSED','本房间已结束，只能查看记录')}
   private validateNickname(value:string){const length=[...String(value||'').trim()].length;if(length<1||length>10)throw new BadRequestException({code:'NICKNAME_INVALID',message:'昵称应为 1～10 个字'})}
   private validateRoomName(value:string){const length=[...String(value||'').trim()].length;if(length<1||length>20)throw new BadRequestException({code:'ROOM_NAME_INVALID',message:'房间名称应为 1～20 个字'})}
-  private joinPepper(){const value=process.env.V2_JOIN_CODE_PEPPER;if(!value)throw new Error('V2_JOIN_CODE_PEPPER is required');return value}
   private async validInvite(roomId:string,invite?:string,scene?:string,manager:EntityManager=this.dataSource.manager){if(!invite&&!scene)return false;const query=manager.getRepository(InviteTokenV2).createQueryBuilder('invite').where('invite.room_id=:roomId AND invite.revoked_at IS NULL',{roomId}).andWhere('(invite.expires_at IS NULL OR invite.expires_at>:now)',{now:new Date()});if(invite)query.andWhere('invite.token_hash=:tokenHash',{tokenHash:hash(invite)});else query.andWhere('invite.scene=:scene',{scene});return Boolean(await query.getOne())}
-  private encryptJoinCode(value:string){const raw=process.env.V2_JOIN_CODE_ENCRYPTION_KEY;if(!raw)throw new Error('V2_JOIN_CODE_ENCRYPTION_KEY is required');const key=Buffer.from(raw,'base64');if(key.length!==32)throw new Error('V2_JOIN_CODE_ENCRYPTION_KEY must be 32 bytes base64');const joinCodeIv=randomBytes(12);const cipher=createCipheriv('aes-256-gcm',key,joinCodeIv);const joinCodeCiphertext=Buffer.concat([cipher.update(value,'utf8'),cipher.final()]);return{joinCodeCiphertext,joinCodeIv,joinCodeTag:cipher.getAuthTag()}}
   private async bump(manager:EntityManager,room:RoomV2,event:string,userId:string){room.version=String(Number(room.version)+1);await manager.save(room);await this.outbox(manager,room,event,userId)}
   private async outbox(manager:EntityManager,room:RoomV2,eventType:string,userId?:string){await manager.save(OutboxEventV2,manager.create(OutboxEventV2,{aggregateType:'room',aggregateId:room.id,eventType,payloadJson:{roomCode:room.roomCode,version:Number(room.version),reason:eventType},attempts:0,availableAt:new Date(),publishedAt:null}))}
   private async assertBalanced(manager:EntityManager,roomId:string){const raw=await manager.getRepository(RoomMemberV2).createQueryBuilder('m').select('COALESCE(SUM(m.balance_points),0)','total').where('m.room_id=:roomId',{roomId}).getRawOne();if(Number(raw.total)!==0)throw new Error('ROOM_BALANCE_INVARIANT_BROKEN')}

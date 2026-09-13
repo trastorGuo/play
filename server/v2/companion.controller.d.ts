@@ -9,7 +9,6 @@ export declare class CompanionV2Controller {
         data: {
             inviteToken: string;
             scene: string;
-            joinCode: string;
             qrCodeUrl: string;
         };
     }>;

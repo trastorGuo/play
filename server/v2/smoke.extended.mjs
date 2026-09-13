@@ -34,10 +34,15 @@ let validationRejected=false
 try{await call('/rooms',{method:'POST',token:a.accessToken,key:crypto.randomUUID(),body:{name:'非法字段',nickname:'甲',unexpected:true}})}catch(error){validationRejected=error.status===400}
 if(!validationRejected)throw new Error('DTO whitelist failed')
 const created = await call('/rooms', { method: 'POST', token: a.accessToken, key: crypto.randomUUID(), body: { name: '集成测试房间', nickname: '甲' } })
+if('joinCode' in created)throw new Error('join code leaked from room create')
 const firstInvite=await call(`/rooms/${created.roomCode}/share-code`,{method:'POST',token:a.accessToken})
+if('joinCode' in firstInvite)throw new Error('join code leaked from share')
+const codePreview=await call(`/rooms/${created.roomCode}/preview`)
+if(codePreview.roomCode!==created.roomCode||'members' in codePreview)throw new Error('room-code-only preview/privacy failed')
 const preview=await call(`/rooms/${created.roomCode}/preview?scene=${encodeURIComponent(firstInvite.scene)}`)
 if(preview.roomCode!==created.roomCode||'members' in preview)throw new Error('pre-join privacy failed')
 const resetKey=crypto.randomUUID();const invite=await call(`/rooms/${created.roomCode}/invite/reset`,{method:'POST',token:a.accessToken,key:resetKey});const duplicateInvite=await call(`/rooms/${created.roomCode}/invite/reset`,{method:'POST',token:a.accessToken,key:resetKey})
+if('joinCode' in invite)throw new Error('join code leaked from reset')
 if(invite.scene!==duplicateInvite.scene)throw new Error('invite reset idempotency failed')
 let oldInviteRejected=false
 try{await call(`/invites/scene/${firstInvite.scene}`)}catch(error){oldInviteRejected=error.status===404}

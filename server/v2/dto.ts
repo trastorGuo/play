@@ -5,6 +5,7 @@ export class RefreshTokenDto { @IsString() @Length(16, 512) refreshToken: string
 export class CreateRoomDto { @IsString() @Length(1, 20) name: string; @IsString() @Length(1, 10) nickname: string; }
 export class JoinRoomDto {
   @IsString() @Length(1, 10) nickname: string;
+  // Older uploaded clients may still send this field; accepted but never used for admission.
   @IsOptional() @Matches(/^[0-9]{4}$/) joinCode?: string;
   @IsOptional() @IsString() @MaxLength(256) inviteToken?: string;
   @IsOptional() @IsString() @MaxLength(32) scene?: string;

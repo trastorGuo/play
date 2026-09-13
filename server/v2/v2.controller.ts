@@ -24,7 +24,7 @@ export class RoomsV2Controller {
 @Controller('api/v2/rooms')
 export class RoomPreviewV2Controller {
   constructor(private readonly ledger: LedgerV2Service) {}
-  @Get(':roomCode/preview') async preview(@Param('roomCode') roomCode:string,@Query('joinCode') joinCode:string,@Query('invite') invite:string,@Query('scene') scene:string,@Headers('x-request-id') requestId=''){return ok(requestId,await this.ledger.preview(roomCode,joinCode,invite,scene))}
+  @Get(':roomCode/preview') async preview(@Param('roomCode') roomCode:string,@Query('invite') invite:string,@Query('scene') scene:string,@Headers('x-request-id') requestId=''){return ok(requestId,await this.ledger.preview(roomCode,invite,scene))}
 }
 
 @Controller('api/v2/operations')

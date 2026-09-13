@@ -167,17 +167,16 @@ let RoomPreviewV2Controller = class RoomPreviewV2Controller {
             value: ledger
         });
     }
-    async preview(roomCode, joinCode, invite, scene, requestId = '') { return (0, http_1.ok)(requestId, await this.ledger.preview(roomCode, joinCode, invite, scene)); }
+    async preview(roomCode, invite, scene, requestId = '') { return (0, http_1.ok)(requestId, await this.ledger.preview(roomCode, invite, scene)); }
 };
 __decorate([
     (0, common_1.Get)(':roomCode/preview'),
     __param(0, (0, common_1.Param)('roomCode')),
-    __param(1, (0, common_1.Query)('joinCode')),
-    __param(2, (0, common_1.Query)('invite')),
-    __param(3, (0, common_1.Query)('scene')),
-    __param(4, (0, common_1.Headers)('x-request-id')),
+    __param(1, (0, common_1.Query)('invite')),
+    __param(2, (0, common_1.Query)('scene')),
+    __param(3, (0, common_1.Headers)('x-request-id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String, String, Object]),
+    __metadata("design:paramtypes", [String, String, String, Object]),
     __metadata("design:returntype", Promise)
 ], RoomPreviewV2Controller.prototype, "preview", null);
 RoomPreviewV2Controller = __decorate([

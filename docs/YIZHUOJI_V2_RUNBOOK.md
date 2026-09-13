@@ -6,7 +6,7 @@ v2 仅使用 14 张 `*_v2` 表，不重命名、不覆盖旧 `rooms`、`room_use
 
 ## 必需环境变量
 
-以 `.env.example` 为模板。`V2_TOKEN_SECRET`、`WECHAT_IDENTITY_PEPPER`、`V2_JOIN_CODE_PEPPER` 必须分别使用随机高熵值，`V2_JOIN_CODE_ENCRYPTION_KEY` 必须是 base64 编码的 32 字节随机密钥。生产必须设置微信 AppID/AppSecret、Redis、反馈图片持久化目录，并保持 `V2_AUTH_MOCK=false`、`V2_REALTIME_MEMORY_FALLBACK=false`、`DB_SYNCHRONIZE_LEGACY=false`。
+以 `.env.example` 为模板。`V2_TOKEN_SECRET`、`WECHAT_IDENTITY_PEPPER` 必须分别使用随机高熵值。加入码已废止；现有 `V2_JOIN_CODE_PEPPER` 与 `V2_JOIN_CODE_ENCRYPTION_KEY` 仅为历史版本回滚保留，新代码不再读取。生产必须设置微信 AppID/AppSecret、Redis、反馈图片持久化目录，并保持 `V2_AUTH_MOCK=false`、`V2_REALTIME_MEMORY_FALLBACK=false`、`DB_SYNCHRONIZE_LEGACY=false`。
 
 ## migration
 
@@ -42,6 +42,8 @@ smoke 会创建两名测试用户与一个已关闭测试房间，验证 DTO 白
 开发环境在未安装 Redis 时可显式设置 `V2_REALTIME_MEMORY_FALLBACK=true` 做单实例联调；生产禁止使用该选项，WSS ticket、发布订阅与 outbox 必须落到 Redis。反馈图片默认写入 `V2_FEEDBACK_UPLOAD_DIR`，生产需挂载持久卷并纳入备份策略。
 
 ## 发布与回滚
+
+2026-09-14 入房规则：公开预览和申请加入仅需六位房间号；若请求带短期 `scene`/邀请 token，则仍核验其有效期和撤销状态。重置邀请仅撤销旧链接和小程序码，不能阻止知道房号的人手动加入；旧 `join_code_*` 列保留以支持应用回滚，新房间只写不可用的随机摘要，不生成可用加入码。无 schema 迁移。旧版客户端可能仍传 `joinCode`，DTO 暂时接受并忽略，待体验版更新后可移除兼容字段。
 
 先备份 MySQL 和反馈图片目录并恢复演练，再执行 migration；灰度顺序为内部体验 → 新房间白名单 → 旧房间认领 → 全量。应用保留上一稳定镜像；API 异常时停止 v2 写入并回退应用，不能用旧快照覆盖已经产生的新账目。`FeedbackFiles2026091200030` 已有关联反馈后不可单独回滚，需用向前修复 migration。
 

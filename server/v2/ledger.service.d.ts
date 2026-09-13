@@ -12,7 +12,7 @@ export declare class LedgerV2Service {
         updatedAt: Date;
         myBalancePoints: number;
     }[]>;
-    preview(roomCode: string, joinCode?: string, invite?: string, scene?: string): Promise<{
+    preview(roomCode: string, invite?: string, scene?: string): Promise<{
         roomCode: string;
         name: string;
         ownerNickname: string;
@@ -25,7 +25,6 @@ export declare class LedgerV2Service {
         name: string;
         nickname: string;
     }, key: string): Promise<{
-        joinCode: string;
         id: string;
         roomCode: string;
         name: string;
@@ -37,7 +36,7 @@ export declare class LedgerV2Service {
             nickname: string;
             avatarUrl: string;
             balancePoints: number;
-            role: "member" | "owner";
+            role: "owner" | "member";
             status: "active" | "left" | "removed";
             joinedAt: Date;
         }[];
@@ -63,7 +62,6 @@ export declare class LedgerV2Service {
     }>;
     join(userId: string, roomCode: string, input: {
         nickname: string;
-        joinCode?: string;
         inviteToken?: string;
         scene?: string;
     }, key: string): Promise<{
@@ -78,7 +76,7 @@ export declare class LedgerV2Service {
             nickname: string;
             avatarUrl: string;
             balancePoints: number;
-            role: "member" | "owner";
+            role: "owner" | "member";
             status: "active" | "left" | "removed";
             joinedAt: Date;
         }[];
@@ -114,7 +112,7 @@ export declare class LedgerV2Service {
             nickname: string;
             avatarUrl: string;
             balancePoints: number;
-            role: "member" | "owner";
+            role: "owner" | "member";
             status: "active" | "left" | "removed";
             joinedAt: Date;
         }[];
@@ -232,7 +230,7 @@ export declare class LedgerV2Service {
             nickname: string;
             avatarUrl: string;
             balancePoints: number;
-            role: "member" | "owner";
+            role: "owner" | "member";
             status: "active" | "left" | "removed";
             joinedAt: Date;
         }[];
@@ -277,9 +275,7 @@ export declare class LedgerV2Service {
     private assertWritable;
     private validateNickname;
     private validateRoomName;
-    private joinPepper;
     private validInvite;
-    private encryptJoinCode;
     private bump;
     private outbox;
     private assertBalanced;

@@ -7,7 +7,6 @@ export declare class CompanionV2Service {
     share(roomCode: string, userId: string): Promise<{
         inviteToken: string;
         scene: string;
-        joinCode: string;
         qrCodeUrl: string;
     }>;
     reset(roomCode: string, userId: string, key: string): Promise<any>;
@@ -79,10 +78,6 @@ export declare class CompanionV2Service {
         updatedAt: Date;
     }>;
     private member;
-    private pepper;
-    private key;
-    private encrypt;
-    private decrypt;
     private publicBase;
     private profileDirectory;
     private avatarUrl;

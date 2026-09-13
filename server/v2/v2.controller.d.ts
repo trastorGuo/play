@@ -7,7 +7,6 @@ export declare class RoomsV2Controller {
         success: true;
         requestId: string;
         data: {
-            joinCode: string;
             id: string;
             roomCode: string;
             name: string;
@@ -288,7 +287,7 @@ export declare class RoomsV2Controller {
 export declare class RoomPreviewV2Controller {
     private readonly ledger;
     constructor(ledger: LedgerV2Service);
-    preview(roomCode: string, joinCode: string, invite: string, scene: string, requestId?: string): Promise<{
+    preview(roomCode: string, invite: string, scene: string, requestId?: string): Promise<{
         success: true;
         requestId: string;
         data: {

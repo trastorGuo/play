@@ -9,7 +9,7 @@ const call = async (path, { method = 'GET', token, key, body } = {}) => {
 const a = await call('/auth/wechat-login', { method: 'POST', body: { code: `smoke-a-${Date.now()}` } })
 const b = await call('/auth/wechat-login', { method: 'POST', body: { code: `smoke-b-${Date.now()}` } })
 const created = await call('/rooms', { method: 'POST', token: a.accessToken, key: crypto.randomUUID(), body: { name: '集成测试房间', nickname: '甲' } })
-const joined = await call(`/rooms/${created.roomCode}/join`, { method: 'POST', token: b.accessToken, key: crypto.randomUUID(), body: { nickname: '乙', joinCode: created.joinCode } })
+const joined = await call(`/rooms/${created.roomCode}/join`, { method: 'POST', token: b.accessToken, key: crypto.randomUUID(), body: { nickname: '乙' } })
 const target = joined.members.find((member) => member.nickname === '乙')
 const idempotencyKey = crypto.randomUUID()
 const first = await call(`/rooms/${created.roomCode}/records`, { method: 'POST', token: a.accessToken, key: idempotencyKey, body: { toMemberId: target.id, points: 20, note: 'smoke' } })
