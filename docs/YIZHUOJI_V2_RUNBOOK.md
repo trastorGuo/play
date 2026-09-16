@@ -1,5 +1,28 @@
 # 一桌记 API v2 运行手册
 
+## 当前线上：v1.0.3（2026-09-17）
+
+- 已将 `play-backend` 从 `yizhuoji-backend:v1.0.1` 切换到 `yizhuoji-backend:v1.0.3`，镜像 ID `sha256:3c24aa699b2f47733ad138ae0958645634ce05184e27dcde77c58a4f06480cee`。源码位于本仓库 `server/v2/`，服务器部署目录 `/opt/yizhuoji-v1.0.3/`；包含此前暂存的房号入房、真实头像以及本次小程序码修复。
+- `GET /api/v2/share-codes/:scene.png?envVersion=trial|develop|release` 校验版本、邀请有效期与房间状态。体验/开发码不检查已发布页面，正式码检查；旧客户端不传版本时读取 `WECHAT_CODE_ENV_VERSION`，默认 `release`。PNG/JPEG 均验证签名，响应 MIME 按实际格式设置；微信错误 JSON 返回 503，记录中只保留版本和数值错误码。
+- 生产 AppID 保持 `wx66bc3be527b94972`，API 为 `https://www.6rem.com/api/v2`，`V2_AUTH_MOCK=false`、`DB_SYNCHRONIZE_LEGACY=false`、`DB_MIGRATIONS_RUN=false`。本次无 schema 修改，没有执行生产 migration。
+- 数据备份 `/root/backups/yizhuoji/play-pre-v1.0.3-20260917.sql.gz`，SHA-256 `800fc46146107ad2983d6f5d371107e343bf48a9a0e45add3eb11b2df8555811`；上传文件备份 `/root/backups/yizhuoji/uploads-pre-v1.0.3-20260917.tar.gz`，SHA-256 `3a427c6bb61b5050bcda4c20a48339ddbf09cfc590d2f2c939456c4f11f06178`。已在独立临时库恢复 21 张表并核验积分守恒；临时恢复库和后续独立 smoke 库/容器均已清理。
+- 本地与镜像内 10 项码服务测试通过；专用测试库从 migration 建表后，扩展 smoke 验证两人入房、纯房号预览/加入、头像、邀请轮换、记账幂等、反向撤销、关闭只读及 WebSocket。上线后新/旧 HTTP 接口正常；公网 WSS 为 101，无效票据关闭码 4001；15 张 v2 表余额不平衡房间数为 0，非法积分数为 0。
+- 合成 scene（不对应任何真实房间）的微信生成测试：`trial` 成功返回约 107 KB JPEG；`release` 当时返回 `41030`，说明发布路径尚不可用。配套小程序 1.0.8 会自动发送自身版本，正式发布后无需切换全局版本配置。真实生产邀请的外发诊断被自动审批拒绝，未用真实邀请做扫码验收，需体验成员真机完成。
+- 小程序 1.0.8 产物在 `/Users/trastor/WeChatProjects/yizhuoji/dist/build/mp-weixin/`，需重新上传并设为体验版；后端上线不会更新已上传的小程序包。
+
+本次应用回滚（仅容器，保留上线后数据）：
+
+```bash
+ssh root@81.68.255.143
+docker stop play-backend
+docker rename play-backend play-backend-failed-v1.0.3
+docker rename play-backend-pre-v1.0.3-20260917 play-backend
+docker start play-backend
+curl -f https://www.6rem.com/api/v2/health
+```
+
+复现码服务测试：`npm run build:server && npm run test:v2:wechat-code`；完整 smoke 只能连接专用测试数据库，不可对生产库创建测试房间。
+
 ## 变更边界
 
 v2 仅使用 14 张 `*_v2` 表，不重命名、不覆盖旧 `rooms`、`room_users`、`expense_records`；旧 `/api/room/*` 仍保留。生产同步建表已关闭，schema 只由 migration 管理。

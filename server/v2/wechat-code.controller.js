@@ -26,14 +26,15 @@ let WechatCodeV2Controller = class WechatCodeV2Controller {
             value: codes
         });
     }
-    async image(scene, response) { const image = await this.codes.image(scene); response.setHeader('Content-Type', 'image/png'); response.setHeader('Cache-Control', 'private,max-age=300'); response.send(image); }
+    async image(scene, envVersion, response) { const image = await this.codes.image(scene, envVersion); response.setHeader('Content-Type', image[0] === 0xff ? 'image/jpeg' : 'image/png'); response.setHeader('Cache-Control', 'private,max-age=300'); response.send(image); }
 };
 __decorate([
     (0, common_1.Get)(':scene.png'),
     __param(0, (0, common_1.Param)('scene')),
-    __param(1, (0, common_1.Res)()),
+    __param(1, (0, common_1.Query)('envVersion')),
+    __param(2, (0, common_1.Res)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, typeof (_a = typeof express_1.Response !== "undefined" && express_1.Response) === "function" ? _a : Object]),
+    __metadata("design:paramtypes", [String, String, typeof (_a = typeof express_1.Response !== "undefined" && express_1.Response) === "function" ? _a : Object]),
     __metadata("design:returntype", Promise)
 ], WechatCodeV2Controller.prototype, "image", null);
 WechatCodeV2Controller = __decorate([

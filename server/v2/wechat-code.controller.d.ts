@@ -3,5 +3,5 @@ import { WechatCodeV2Service } from './wechat-code.service';
 export declare class WechatCodeV2Controller {
     private readonly codes;
     constructor(codes: WechatCodeV2Service);
-    image(scene: string, response: Response): Promise<void>;
+    image(scene: string, envVersion: string, response: Response): Promise<void>;
 }

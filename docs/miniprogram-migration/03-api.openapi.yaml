@@ -359,6 +359,31 @@ paths:
                           inviteToken: { type: string }
                           scene: { type: string }
                           qrCodeUrl: { type: string, format: uri }
+  /share-codes/{scene}.png:
+    get:
+      tags: [Rooms]
+      summary: 获取有效邀请的真实微信小程序码（按客户端版本生成）
+      security: []
+      parameters:
+        - name: scene
+          in: path
+          required: true
+          schema: { type: string }
+        - name: envVersion
+          in: query
+          description: 由微信 getAccountInfoSync 返回；省略时使用服务端默认版本。
+          schema: { type: string, enum: [release, trial, develop] }
+      responses:
+        '200':
+          description: 已校验的微信小程序码图片
+          content:
+            image/png:
+              schema: { type: string, format: binary }
+            image/jpeg:
+              schema: { type: string, format: binary }
+        '400': { description: 无效的小程序版本 }
+        '404': { description: 邀请过期、被撤销或房间已结束 }
+        '503': { description: 微信生成失败或超时；不得当作图片显示 }
   /realtime/ticket:
     post:
       tags: [Realtime]
@@ -541,4 +566,3 @@ components:
               - type: object
                 properties:
                   nickname: { type: string }
-
