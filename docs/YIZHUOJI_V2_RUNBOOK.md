@@ -1,6 +1,20 @@
 # 一桌记 API v2 运行手册
 
-## 当前线上：v1.0.3（2026-09-17）
+## 当前线上：v1.0.4（2026-10-20）
+
+已部署 `yizhuoji-backend:v1.0.4` 到 `play-backend`，部署目录 `/opt/yizhuoji-v1.0.4/`。本次修复刷新凭证重放/并发轮换及离开成员重新加入绕过人数上限。没有执行生产 DDL 或数据修复；自动 schema 同步和启动 migration 均关闭。具体测试、备份校验值、数据一致性及未通过的外部门禁见 [部署验收记录](DEPLOYMENT_2026-10-20.md)。
+
+回滚只切应用，禁止将备份覆盖回有新增账目的生产库：
+
+```bash
+docker stop play-backend
+docker rename play-backend play-backend-failed-v1.0.4
+docker rename play-backend-pre-v1.0.4-20261020 play-backend
+docker start play-backend
+curl -f https://www.6rem.com/api/v2/health
+```
+
+## 历史版本：v1.0.3（2026-09-17）
 
 - 已将 `play-backend` 从 `yizhuoji-backend:v1.0.1` 切换到 `yizhuoji-backend:v1.0.3`，镜像 ID `sha256:3c24aa699b2f47733ad138ae0958645634ce05184e27dcde77c58a4f06480cee`。源码位于本仓库 `server/v2/`，服务器部署目录 `/opt/yizhuoji-v1.0.3/`；包含此前暂存的房号入房、真实头像以及本次小程序码修复。
 - `GET /api/v2/share-codes/:scene.png?envVersion=trial|develop|release` 校验版本、邀请有效期与房间状态。体验/开发码不检查已发布页面，正式码检查；旧客户端不传版本时读取 `WECHAT_CODE_ENV_VERSION`，默认 `release`。PNG/JPEG 均验证签名，响应 MIME 按实际格式设置；微信错误 JSON 返回 503，记录中只保留版本和数值错误码。
@@ -25,7 +39,7 @@ curl -f https://www.6rem.com/api/v2/health
 
 ## 变更边界
 
-v2 仅使用 14 张 `*_v2` 表，不重命名、不覆盖旧 `rooms`、`room_users`、`expense_records`；旧 `/api/room/*` 仍保留。生产同步建表已关闭，schema 只由 migration 管理。
+v2 仅使用 15 张 `*_v2` 表，不重命名、不覆盖旧 `rooms`、`room_users`、`expense_records`；旧 `/api/room/*` 仍保留。生产同步建表已关闭，schema 只由 migration 管理。
 
 ## 必需环境变量
 
@@ -57,7 +71,7 @@ npm run server
 本地 smoke 需使用专用测试库/隔离 v2 表并启动服务后执行：
 
 ```bash
-V2_SMOKE_BASE_URL=http://127.0.0.1:6020/api/v2 npm run test:v2:smoke
+V2_SMOKE_ISOLATED=true V2_SMOKE_BASE_URL=http://127.0.0.1:6020/api/v2 npm run test:v2:smoke
 ```
 
 smoke 会创建两名测试用户与一个已关闭测试房间，验证 DTO 白名单、加入前隐私、邀请轮换与幂等、事务记账、幂等重放、反向撤销、余额守恒、反馈图片/记录、注销阻断、WSS ticket 和关闭拒写。另运行 `npm run verify:v2:data` 只读核验表隔离和全库余额约束。

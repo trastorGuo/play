@@ -1,6 +1,7 @@
 import WebSocket from 'ws'
 
 const base = process.env.V2_SMOKE_BASE_URL || 'http://127.0.0.1:6020/api/v2'
+if (process.env.V2_SMOKE_ISOLATED !== 'true' || !['127.0.0.1', 'localhost'].includes(new URL(base).hostname)) throw new Error('Requires an explicitly isolated loopback test database')
 const call = async (path, { method = 'GET', token, key, body } = {}) => {
   const response = await fetch(`${base}${path}`, { method, headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(key ? { 'Idempotency-Key': key } : {}), 'Content-Type': 'application/json', 'X-Request-Id': crypto.randomUUID() }, body: body ? JSON.stringify(body) : undefined })
   const data = response.status === 204 ? null : await response.json()

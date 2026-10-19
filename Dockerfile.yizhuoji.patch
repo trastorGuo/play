@@ -1,0 +1,8 @@
+# Patch releases reuse the verified dependency layer; use Dockerfile.yizhuoji
+# instead whenever package-lock.json or the base runtime changes.
+ARG BASE_IMAGE=yizhuoji-backend:v1.0.3
+FROM ${BASE_IMAGE}
+WORKDIR /app
+COPY server/ ./dist/
+ENV NODE_ENV=production
+CMD ["node", "dist/main.js"]

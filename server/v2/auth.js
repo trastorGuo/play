@@ -101,25 +101,29 @@ let AuthV2Service = class AuthV2Service {
         return this.issue(user);
     }
     async refresh(rawToken) {
-        const entity = await this.refreshTokens.findOne({ where: { tokenHash: sha256(rawToken), revokedAt: null } });
-        if (!entity || entity.expiresAt <= new Date())
-            throw new common_1.UnauthorizedException({ code: 'AUTH_INVALID', message: '登录状态已更新，请重试' });
-        const user = await this.users.findOneByOrFail({ id: entity.userId });
-        entity.revokedAt = new Date();
-        await this.refreshTokens.save(entity);
-        const response = await this.issue(user);
-        const replacement = await this.refreshTokens.findOneBy({ tokenHash: sha256(response.refreshToken) });
-        entity.replacedById = (replacement === null || replacement === void 0 ? void 0 : replacement.id) || null;
-        await this.refreshTokens.save(entity);
-        return response;
+        return this.refreshTokens.manager.transaction(async (manager) => {
+            const repository = manager.getRepository(entities_1.RefreshTokenV2);
+            const entity = await repository.createQueryBuilder('token').setLock('pessimistic_write')
+                .where('token.token_hash = :hash', { hash: sha256(rawToken) }).getOne();
+            if (!entity || entity.revokedAt || entity.expiresAt <= new Date())
+                throw new common_1.UnauthorizedException({ code: 'AUTH_INVALID', message: '登录状态已更新，请重试' });
+            const user = await manager.getRepository(entities_1.UserV2).findOneByOrFail({ id: entity.userId });
+            entity.revokedAt = new Date();
+            const response = await this.issue(user, manager);
+            const replacement = await repository.findOneByOrFail({ tokenHash: sha256(response.refreshToken) });
+            entity.replacedById = replacement.id;
+            await repository.save(entity);
+            return response;
+        });
     }
     async logout(userId, rawToken) { const entity = await this.refreshTokens.findOne({ where: { tokenHash: sha256(rawToken), userId } }); if (entity && !entity.revokedAt) {
         entity.revokedAt = new Date();
         await this.refreshTokens.save(entity);
     } }
-    async issue(user) {
+    async issue(user, manager = this.refreshTokens.manager) {
         const rawRefresh = (0, crypto_1.randomBytes)(32).toString('base64url');
-        await this.refreshTokens.save(this.refreshTokens.create({ userId: user.id, tokenHash: sha256(rawRefresh), expiresAt: new Date(Date.now() + 30 * 86400000), revokedAt: null, replacedById: null }));
+        const repository = manager.getRepository(entities_1.RefreshTokenV2);
+        await repository.save(repository.create({ userId: user.id, tokenHash: sha256(rawRefresh), expiresAt: new Date(Date.now() + 30 * 86400000), revokedAt: null, replacedById: null }));
         const base = (process.env.PUBLIC_API_BASE_URL || 'http://127.0.0.1:6015/api/v2').replace(/\/$/, '');
         return { accessToken: this.tokens.sign(user.id), refreshToken: rawRefresh, expiresIn: 1800, user: { id: String(user.id), displayName: user.displayName, avatarUrl: user.avatarFileId ? `${base}/profile-avatars/${user.avatarFileId}` : null } };
     }

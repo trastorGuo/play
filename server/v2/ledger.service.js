@@ -93,7 +93,7 @@ let LedgerV2Service = class LedgerV2Service {
             const active = await repository.find({ where: { roomId: room.id, status: 'active' } });
             if (active.some((item) => item.id !== (member === null || member === void 0 ? void 0 : member.id) && item.nicknameNormalized === normalized(input.nickname)))
                 throw fail('ROOM_NICKNAME_CONFLICT', '这个昵称已有人使用');
-            if (!member && active.length >= room.maxMembers)
+            if ((!member || member.status !== 'active') && active.length >= room.maxMembers)
                 throw fail('ROOM_FULL', '房间人数已满');
             if (member) {
                 member.nickname = input.nickname.trim();

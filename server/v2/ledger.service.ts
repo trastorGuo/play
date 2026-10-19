@@ -67,7 +67,7 @@ export class LedgerV2Service {
       const repository = manager.getRepository(RoomMemberV2); let member = await repository.findOne({ where: { roomId: room.id, userId } });
       const active = await repository.find({ where: { roomId: room.id, status: 'active' } });
       if (active.some((item) => item.id !== member?.id && item.nicknameNormalized === normalized(input.nickname))) throw fail('ROOM_NICKNAME_CONFLICT', '这个昵称已有人使用');
-      if (!member && active.length >= room.maxMembers) throw fail('ROOM_FULL', '房间人数已满');
+      if ((!member || member.status !== 'active') && active.length >= room.maxMembers) throw fail('ROOM_FULL', '房间人数已满');
       if (member) { member.nickname = input.nickname.trim(); member.nicknameNormalized = normalized(input.nickname); member.status = 'active'; member.leftAt = null; }
       else member = repository.create({ roomId: room.id, userId, nickname: input.nickname.trim(), nicknameNormalized: normalized(input.nickname), balancePoints: '0', role: 'member', status: 'active', leftAt: null, legacyRoomUserId: null });
       await repository.save(member); await this.bump(manager, room, 'member.joined', userId); return this.snapshotWith(manager, room, userId);
